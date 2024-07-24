@@ -106,6 +106,17 @@ theorem adjacent_irrefl {n} (g: simple_graph n) (x: Nat): adjacent g x x → Fal
                           exact (iH H2 H)
 
 
+def simple_graph_to_SimpleGraph {n} (g: simple_graph n): SimpleGraph (Fin (n + 1)) := by
+  refine (SimpleGraph.mk (λ x y => adjacent g x y) ?_ ?_)
+  . unfold Symmetric
+    simp
+    intros x y
+    apply adjacent_symm
+  . unfold Irreflexive
+    simp
+    intros x
+    apply adjacent_irrefl
+
 
 -- Lemmas about fin --
 
