@@ -23,7 +23,7 @@ def neighbors_aux {n} (g: pre_simple_graph n) (x: Nat): List Nat :=
   | .Empty => []
   | .Cons m L g' => if n = x
                     then L
-                    else if x ∈ L
+                    else if x ∈ L ∧ x < n
                          then n :: neighbors_aux g' x
                          else neighbors_aux g' x
 
@@ -31,11 +31,35 @@ def neighbors {n} (g: simple_graph n) (x: Nat): List Nat := neighbors_aux g.1 x
 
 def adjacent {n} (g: simple_graph n) (x y: Nat): Prop := y ∈ neighbors g x
 
-theorem adjacent_symm {n} (g: simple_graph n) (x y: Nat): adjacent g x y → adjacent g y x := by
-  sorry
+theorem adjacent_symm {n} (g: simple_graph n) (x y: Nat):
+  adjacent g x y → adjacent g y x := by sorry
 
-theorem adjacent_irrefl {n} (g: simple_graph n) (x: Nat): adjacent g x x → False :=
-  sorry
+theorem adjacent_irrefl {n} (g: simple_graph n) (x: Nat): adjacent g x x → False := by
+  unfold adjacent
+  intro H
+  unfold neighbors at H
+  cases g; rename_i g Hg
+  simp at H
+  induction g with
+  | Empty => clear Hg
+             unfold neighbors_aux at H
+             simp at *
+  | Cons m L g' iH => simp at *
+                      unfold correct_simple_graph at Hg
+                      unfold neighbors_aux at H
+                      split at H <;> rename_i H0
+                      . obtain ⟨_, H1, _⟩ := Hg
+                        have H2 := H1 x H
+                        omega
+                      . split at H; rename_i H1
+                        . simp at *
+                          obtain H | H := H
+                          . omega
+                          . obtain ⟨_, _, H2⟩ := Hg
+                            exact (iH H2 H)
+                        . obtain ⟨_, _, H2⟩ := Hg
+                          exact (iH H2 H)
+
 
 
 -- Lemmas about fin --
@@ -86,4 +110,4 @@ theorem complete_graph_correct (n: Nat): correct_simple_graph (pre_complete_grap
 def complete_graph (n: Nat): simple_graph n :=
   ⟨pre_complete_graph n, complete_graph_correct n⟩
 
-#eval (neighbors (complete_graph 4) 0)
+#eval (neighbors (complete_graph 4) 1)
