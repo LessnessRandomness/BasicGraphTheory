@@ -22,8 +22,8 @@ def neighbors_aux {n} (g: pre_simple_graph n) (x: Nat): List Nat :=
   match g with
   | .Empty => []
   | .Cons m L g' => if n = x
-                    then L
-                    else if x ∈ L ∧ x < n
+                    then L ++ neighbors_aux g' x
+                    else if x ∈ L
                          then n :: neighbors_aux g' x
                          else neighbors_aux g' x
 
@@ -32,7 +32,49 @@ def neighbors {n} (g: simple_graph n) (x: Nat): List Nat := neighbors_aux g.1 x
 def adjacent {n} (g: simple_graph n) (x y: Nat): Prop := y ∈ neighbors g x
 
 theorem adjacent_symm {n} (g: simple_graph n) (x y: Nat):
-  adjacent g x y → adjacent g y x := by sorry
+  adjacent g x y → adjacent g y x := by
+  unfold adjacent
+  unfold neighbors
+  cases g; rename_i g Hg
+  simp
+  induction g with
+  | Empty => unfold neighbors_aux
+             simp
+  | Cons m L g' iH => simp at *
+                      obtain ⟨Hg1, Hg2, Hg3⟩ := Hg
+                      unfold neighbors_aux
+                      split_ifs
+                      . have H: x = y := by omega
+                        cases H
+                        tauto
+                      . simp
+                        omega
+                      . intros H
+                        simp at H
+                        have H1: y ∈ neighbors_aux g' x := by tauto
+                        exact (iH Hg3 H1)
+                      . simp
+                        tauto
+                      . simp
+                        intros H1
+                        obtain H1 | H1 := H1
+                        . omega
+                        . right
+                          exact (iH Hg3 H1)
+                      . simp
+                        intros H1
+                        obtain H1 | H1 := H1
+                        . omega
+                        . exact (iH Hg3 H1)
+                      . simp
+                        intros H1
+                        right
+                        exact (iH Hg3 H1)
+                      . intros H1
+                        simp
+                        right
+                        exact (iH Hg3 H1)
+                      . exact (iH Hg3)
 
 theorem adjacent_irrefl {n} (g: simple_graph n) (x: Nat): adjacent g x x → False := by
   unfold adjacent
@@ -48,9 +90,12 @@ theorem adjacent_irrefl {n} (g: simple_graph n) (x: Nat): adjacent g x x → Fal
                       unfold correct_simple_graph at Hg
                       unfold neighbors_aux at H
                       split at H <;> rename_i H0
-                      . obtain ⟨_, H1, _⟩ := Hg
-                        have H2 := H1 x H
-                        omega
+                      . obtain ⟨_, H1, H2⟩ := Hg
+                        simp at H
+                        obtain H | H := H
+                        . have H2 := H1 _ H
+                          omega
+                        . exact (iH H2 H)
                       . split at H; rename_i H1
                         . simp at *
                           obtain H | H := H
