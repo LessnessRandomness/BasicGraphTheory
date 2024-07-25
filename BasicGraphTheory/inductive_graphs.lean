@@ -140,36 +140,6 @@ def remove_last {n} (G: SimpleGraph (Fin (n + 1))): SimpleGraph (Fin n) := by
     intros x
     apply irrefl
 
--- def add_one_more {n} (G: SimpleGraph (Fin n)) (P: Fin n → Prop): SimpleGraph (Fin (n + 1)) := by
---   let adj: Fin (n + 1) → Fin (n + 1) → Prop := by
---     intros x y
---     cases x; rename_i x px
---     cases y; rename_i y py
---     if Hx:(x < n)
---     then if Hy:(y < n)
---          then exact (G.Adj ⟨x, Hx⟩ ⟨y, Hy⟩)
---          else exact (P ⟨x, Hx⟩)
---     else if Hy:(y < n)
---          then exact (P ⟨y, Hy⟩)
---          else exact False
---   refine (SimpleGraph.mk adj ?_ ?_)
---   . unfold Symmetric
---     intros x y H
---     cases G; rename_i Adj symm irrefl
---     dsimp only [adj] at *
---     split_ifs at *
---     . apply symm
---       apply H
---     . assumption
---     . assumption
---   . unfold Irreflexive
---     intros x
---     dsimp only [adj]
---     cases G; rename_i Adj symm irrefl
---     split_ifs
---     . apply irrefl
---     . tauto
-
 instance remove_last_adj_dec: ∀ {n} (G: SimpleGraph (Fin (n + 1))) [inst: DecidableRel G.Adj],
   DecidableRel (remove_last G).Adj := by
   unfold DecidableRel
@@ -234,24 +204,89 @@ def SimpleGraph_to_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
 
 -- Proofs of adjacency relation preservation
 
-theorem adj_proof_1 {n} (g: simple_graph n) (x y: Fin n): adjacent g ↑x ↑y → (simple_graph_to_SimpleGraph g).Adj x y := by
-  intros H
-  induction n with
-  | zero => cases x; omega
-  | succ m iH => cases g; rename_i g Hg
-                 unfold simple_graph_to_SimpleGraph
-                 simp
-                 assumption
+theorem adj_proof_1 {n} (g: simple_graph n) (x y: Fin n): adjacent g ↑x ↑y ↔ (simple_graph_to_SimpleGraph g).Adj x y := by
+  constructor <;> intros H
+  . induction n with
+    | zero => cases x; omega
+    | succ m iH => cases g; rename_i g Hg
+                   unfold simple_graph_to_SimpleGraph
+                   simp
+                   assumption
+  . induction n with
+    | zero => cases x; omega
+    | succ m iH => cases g; rename_i g Hg
+                   unfold simple_graph_to_SimpleGraph at H
+                   simp at *
+                   assumption
+
+instance inst2: ∀ {n} (g: simple_graph n), DecidableRel (simple_graph_to_SimpleGraph g).Adj := by
+  unfold simple_graph_to_SimpleGraph
+  simp
+  intros n g
+  unfold DecidableRel
+  intros x y
+  unfold adjacent neighbors neighbors_aux
+  simp
+  cases g; rename_i g Hg
+  cases n <;> simp at *
+  . cases x
+    omega
+  . cases g; simp at *
+    split_ifs
+    . infer_instance
+    . infer_instance
+    . infer_instance
 
 theorem adj_proof_2 {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj] (x y: Fin n):
-  G.Adj x y → adjacent (SimpleGraph_to_simple_graph G) ↑x ↑y := by
-  intros H
-  induction n with
-  | zero => cases x; omega
-  | succ m iH => unfold SimpleGraph_to_simple_graph
-                 unfold SimpleGraph_to_pre_simple_graph
-                 simp
-                 sorry
+  G.Adj x y ↔ adjacent (SimpleGraph_to_simple_graph G) ↑x ↑y := by
+  constructor <;> intros H
+  . induction n with
+    | zero => cases x; omega
+    | succ m iH => unfold SimpleGraph_to_simple_graph
+                   unfold SimpleGraph_to_pre_simple_graph
+                   simp
+                   cases x; rename_i x Hx
+                   cases y; rename_i y Hy
+                   have Hx0: x < m ∨ x = m := by omega
+                   have Hy0: y < m ∨ y = m := by omega
+                   obtain Hx0 | Hx0 := Hx0 <;> obtain Hy0 | Hy0 := Hy0
+                   . have H0: (remove_last G).Adj ⟨x, Hx0⟩ ⟨y, Hy0⟩ := by
+                       unfold remove_last
+                       simp
+                       apply H
+                     apply iH at H0
+                     clear iH
+                     unfold adjacent neighbors neighbors_aux at *
+                     split_ifs at *
+                     . simp at *
+                       omega
+                     . simp at *
+                       omega
+                     . simp at *
+                       omega
+                     . simp at *
+                       right
+                       cases m
+                       . omega
+                       . simp at *
+                         rename_i n H1 H2 H3
+                         sorry
+                     . simp at *
+                       omega
+                     . simp at *
+                       cases m
+                       . omega
+                       . sorry
+                   . sorry
+                   . sorry
+                   . exfalso
+                     cases Hx0
+                     cases Hy0
+                     apply G.loopless
+                     exact H
+  .
+    sorry
+
 
 
 -- theorem aux00 {n} (G: SimpleGraph (Fin (n + 1))):
@@ -349,27 +384,6 @@ theorem adj_proof_2 {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj] (x y
 --   intros a b
 --   infer_instance
 
-instance inst2: ∀ {n} (g: simple_graph n), DecidableRel (simple_graph_to_SimpleGraph g).Adj := by
-  unfold simple_graph_to_SimpleGraph
-  simp
-  intros n g
-  unfold DecidableRel
-  intros x y
-  unfold adjacent neighbors neighbors_aux
-  simp
-  cases g; rename_i g Hg
-  cases n <;> simp at *
-  . cases x
-    omega
-  . cases g; simp at *
-    split_ifs
-    . infer_instance
-    . infer_instance
-    . infer_instance
-
-theorem first_direction {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj]:
-  simple_graph_to_SimpleGraph (SimpleGraph_to_simple_graph G) = G := by
-  sorry
 
 theorem second_direcction {n} (g: simple_graph n):
   SimpleGraph_to_simple_graph (simple_graph_to_SimpleGraph g) = g := by
