@@ -108,7 +108,7 @@ theorem adjacent_irrefl {n} (g: simple_graph n) (x: Nat): adjacent g x x → Fal
                           exact (iH H2 H)
 
 
-def simple_graph_to_SimpleGraph {n} (g: simple_graph n): SimpleGraph (Fin (n + 1)) := by
+def simple_graph_to_SimpleGraph {n} (g: simple_graph n): SimpleGraph (Fin n) := by
   refine (SimpleGraph.mk (λ x y => adjacent g x y) ?_ ?_)
   . unfold Symmetric
     simp
@@ -231,7 +231,72 @@ def SimpleGraph_to_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
                    omega
                  . apply iH
 
+theorem aux00 {n} (G: SimpleGraph (Fin (n + 1))):
+  G = add_one_more (remove_last G) (λ x => G.Adj (fin_max n) (increase_fin_limit x)) := by
+  ext; rename_i x y
+  constructor <;> intro H
+  . unfold add_one_more remove_last
+    simp
+    split_ifs
+    . apply H
+    . have Hy: y = fin_max n := by
+        ext
+        cases y
+        unfold fin_max
+        simp at *
+        omega
+      rw [<- Hy]
+      apply G.symm
+      apply H
+    . have Hx: x = fin_max n := by
+        ext
+        cases x
+        unfold fin_max
+        simp at *
+        omega
+      rw [<- Hx]
+      apply H
+    . have Hx: x = fin_max n := by
+        ext
+        cases x
+        unfold fin_max
+        simp at *
+        omega
+      have Hy: y = fin_max n := by
+        ext
+        cases y
+        unfold fin_max
+        simp at *
+        omega
+      rw [Hx, Hy] at H
+      apply (G.loopless _ H)
+  . unfold add_one_more remove_last at H
+    simp at H
+    split_ifs at H
+    . apply H
+    . have Hy: y = fin_max n := by
+        ext
+        cases y
+        unfold fin_max
+        simp at *
+        omega
+      rw [Hy]
+      apply G.symm
+      apply H
+    . have Hx: x = fin_max n := by
+        ext
+        cases x
+        unfold fin_max
+        simp at *
+        omega
+      rw [Hx]
+      apply H
 
+
+
+theorem aux01 {n} (G: SimpleGraph (Fin (n + 1))) [inst: DecidableRel G.Adj]:
+  G = simple_graph_to_SimpleGraph (SimpleGraph_to_simple_graph G) := by
+  sorry
 
 -- Lemmas about fin --
 
