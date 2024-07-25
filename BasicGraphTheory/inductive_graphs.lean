@@ -31,6 +31,8 @@ def neighbors {n} (g: simple_graph n) (x: Nat): List Nat := neighbors_aux g.1 x
 
 def adjacent {n} (g: simple_graph n) (x y: Nat): Prop := y ∈ neighbors g x
 
+def degree {n} (g: simple_graph n) (x: Nat): Nat := (neighbors g x).length
+
 theorem adjacent_symm {n} (g: simple_graph n) (x y: Nat):
   adjacent g x y → adjacent g y x := by
   unfold adjacent
@@ -117,6 +119,119 @@ def simple_graph_to_SimpleGraph {n} (g: simple_graph n): SimpleGraph (Fin (n + 1
     intros x
     apply adjacent_irrefl
 
+def increase_fin_limit {n}: Fin n → Fin (n + 1) := by
+  intros f
+  cases f; rename_i x p
+  exists x
+  omega
+
+def fin_max n: Fin (n + 1) := by
+  exists n
+  omega
+
+def remove_last {n} (G: SimpleGraph (Fin (n + 1))): SimpleGraph (Fin n) := by
+  refine (SimpleGraph.mk (λ x y => G.Adj (increase_fin_limit x) (increase_fin_limit y)) ?_ ?_)
+  . cases G; rename_i Adj symm irrefl
+    simp
+    intros x y
+    apply symm
+  . cases G; rename_i Adj symm irrefl
+    simp
+    intros x
+    apply irrefl
+
+def add_one_more {n} (G: SimpleGraph (Fin n)) (P: Fin n → Prop): SimpleGraph (Fin (n + 1)) := by
+  let adj: Fin (n + 1) → Fin (n + 1) → Prop := by
+    intros x y
+    cases x; rename_i x px
+    cases y; rename_i y py
+    if Hx:(x < n)
+    then if Hy:(y < n)
+         then exact (G.Adj ⟨x, Hx⟩ ⟨y, Hy⟩)
+         else exact (P ⟨x, Hx⟩)
+    else if Hy:(y < n)
+         then exact (P ⟨y, Hy⟩)
+         else exact False
+  refine (SimpleGraph.mk adj ?_ ?_)
+  . unfold Symmetric
+    intros x y H
+    cases G; rename_i Adj symm irrefl
+    dsimp only [adj] at *
+    split_ifs at *
+    . apply symm
+      apply H
+    . assumption
+    . assumption
+  . unfold Irreflexive
+    intros x
+    dsimp only [adj]
+    cases G; rename_i Adj symm irrefl
+    split_ifs
+    . apply irrefl
+    . tauto
+
+instance remove_last_adj_dec: ∀ {n} (G: SimpleGraph (Fin (n + 1))) [inst: DecidableRel G.Adj],
+  DecidableRel (remove_last G).Adj := by
+  unfold DecidableRel
+  intros n G H a b
+  unfold remove_last
+  simp
+  infer_instance
+
+def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
+  [inst: DecidableRel G.Adj]: pre_simple_graph n := by
+  induction n with
+  | zero => exact .Empty
+  | succ m iH => refine (.Cons m ?_ (iH (remove_last G)))
+                 exact (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
+
+
+theorem fin_list_nodup n: (Fin.list n).Nodup := by
+  sorry
+
+def SimpleGraph_to_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
+  [inst: DecidableRel G.Adj]: simple_graph n := by
+  exists (SimpleGraph_to_pre_simple_graph G)
+  induction n with
+  | zero => cases G; rename_i Adj symm irrefl
+            unfold correct_simple_graph
+            unfold SimpleGraph_to_pre_simple_graph
+            simp
+  | succ m iH => cases G; rename_i Adj symm irrefl
+                 unfold correct_simple_graph
+                 unfold SimpleGraph_to_pre_simple_graph
+                 simp
+                 refine ⟨?_, ?_, ?_⟩
+                 . apply List.Nodup.filter
+                   rw [List.nodup_bind]
+                   refine ⟨?_, ?_⟩
+                   . simp
+                   . simp
+                     have H := fin_list_nodup m
+                     generalize (Fin.list m) = W at *
+                     clear Adj symm irrefl inst iH
+                     induction W with
+                     | nil => simp
+                     | cons x t iH => simp at *
+                                      obtain ⟨H, H0⟩ := H
+                                      constructor
+                                      . intros f Hf H1
+                                        rw [<- Fin.ext_iff] at H1
+                                        cases H1
+                                        tauto
+                                      . tauto
+                 . intros x Hx
+                   rw [List.mem_filter] at Hx
+                   simp at Hx
+                   obtain ⟨H, H0⟩ := Hx
+                   cases H; rename_i w Hw
+                   cases Hw; rename_i H1 H2
+                   cases w
+                   simp at *
+                   omega
+                 . apply iH
+
+
 
 -- Lemmas about fin --
 
@@ -125,9 +240,6 @@ theorem fin_to_nat_injective n: Function.Injective (λ (x: Fin n) => x.1) := by
   intros x y h
   simp at *
   apply (Fin.ext h)
-
-theorem fin_list_nodup n: (Fin.list n).Nodup := by
-  sorry
 
 -- by https://leanprover.zulipchat.com/#user/684366 (Edward van de Meent)
 theorem fin_list_has_all_fins: ∀ {N} (f: Fin N), f ∈ Fin.list N := by
