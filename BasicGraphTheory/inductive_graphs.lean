@@ -292,20 +292,6 @@ theorem aux00 {n} (G: SimpleGraph (Fin (n + 1))):
       rw [Hx]
       apply H
 
-
-
-theorem aux01 {n} (G: SimpleGraph (Fin (n + 1))) [inst: DecidableRel G.Adj]:
-  G = simple_graph_to_SimpleGraph (SimpleGraph_to_simple_graph G) := by
-  sorry
-
--- Lemmas about fin --
-
-theorem fin_to_nat_injective n: Function.Injective (λ (x: Fin n) => x.1) := by
-  unfold Function.Injective
-  intros x y h
-  simp at *
-  apply (Fin.ext h)
-
 -- by https://leanprover.zulipchat.com/#user/684366 (Edward van de Meent)
 theorem fin_list_has_all_fins: ∀ {N} (f: Fin N), f ∈ Fin.list N := by
   intro n m
@@ -315,6 +301,23 @@ theorem fin_list_has_all_fins: ∀ {N} (f: Fin N), f ∈ Fin.list N := by
     exact m.2
   refine ⟨⟨m.val,this⟩,?_⟩
   simp only [List.get_eq_getElem, Fin.getElem_list, Fin.cast_mk, Fin.eta]
+
+theorem aux01 {n} (G: SimpleGraph (Fin (n + 1))) [inst: DecidableRel G.Adj]:
+  G = simple_graph_to_SimpleGraph (SimpleGraph_to_simple_graph G) := by
+  induction n with
+  | zero => sorry
+  | succ m iH => sorry
+
+
+
+
+-- Lemmas about fin --
+
+theorem fin_to_nat_injective n: Function.Injective (λ (x: Fin n) => x.1) := by
+  unfold Function.Injective
+  intros x y h
+  simp at *
+  apply (Fin.ext h)
 
 -- Complete Graph --
 
