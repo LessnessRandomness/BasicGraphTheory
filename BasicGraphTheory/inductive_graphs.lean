@@ -107,7 +107,7 @@ theorem adjacent_irrefl {n} (g: simple_graph n) (x: Nat): adjacent g x x → Fal
                         . obtain ⟨_, _, H2⟩ := Hg
                           exact (iH H2 H)
 
-
+-- One direction
 def simple_graph_to_SimpleGraph {n} (g: simple_graph n): SimpleGraph (Fin n) := by
   refine (SimpleGraph.mk (λ x y => adjacent g x y) ?_ ?_)
   . unfold Symmetric
@@ -178,6 +178,7 @@ instance remove_last_adj_dec: ∀ {n} (G: SimpleGraph (Fin (n + 1))) [inst: Deci
   simp
   infer_instance
 
+-- Second direction
 def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
   [inst: DecidableRel G.Adj]: pre_simple_graph n := by
   induction n with
@@ -231,66 +232,127 @@ def SimpleGraph_to_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
                    omega
                  . apply iH
 
-theorem aux00 {n} (G: SimpleGraph (Fin (n + 1))):
-  G = add_one_more (remove_last G) (λ x => G.Adj (fin_max n) (increase_fin_limit x)) := by
-  ext; rename_i x y
-  constructor <;> intro H
-  . unfold add_one_more remove_last
-    simp
+-- theorem aux00 {n} (G: SimpleGraph (Fin (n + 1))):
+--   G = add_one_more (remove_last G) (λ x => G.Adj (fin_max n) (increase_fin_limit x)) := by
+--   ext; rename_i x y
+--   constructor <;> intro H
+--   . unfold add_one_more remove_last
+--     simp
+--     split_ifs
+--     . apply H
+--     . have Hy: y = fin_max n := by
+--         ext
+--         cases y
+--         unfold fin_max
+--         simp at *
+--         omega
+--       rw [<- Hy]
+--       apply G.symm
+--       apply H
+--     . have Hx: x = fin_max n := by
+--         ext
+--         cases x
+--         unfold fin_max
+--         simp at *
+--         omega
+--       rw [<- Hx]
+--       apply H
+--     . have Hx: x = fin_max n := by
+--         ext
+--         cases x
+--         unfold fin_max
+--         simp at *
+--         omega
+--       have Hy: y = fin_max n := by
+--         ext
+--         cases y
+--         unfold fin_max
+--         simp at *
+--         omega
+--       rw [Hx, Hy] at H
+--       apply (G.loopless _ H)
+--   . unfold add_one_more remove_last at H
+--     simp at H
+--     split_ifs at H
+--     . apply H
+--     . have Hy: y = fin_max n := by
+--         ext
+--         cases y
+--         unfold fin_max
+--         simp at *
+--         omega
+--       rw [Hy]
+--       apply G.symm
+--       apply H
+--     . have Hx: x = fin_max n := by
+--         ext
+--         cases x
+--         unfold fin_max
+--         simp at *
+--         omega
+--       rw [Hx]
+--       apply H
+
+-- def remove_last_from_simple_graph {n} (g: simple_graph (n + 1)): simple_graph n := by
+--   unfold simple_graph at *
+--   cases g; rename_i val property
+--   cases val; rename_i h t
+--   unfold correct_simple_graph at property
+--   exists t
+--   tauto
+
+-- theorem aux01 {n} (G: SimpleGraph (Fin (n + 1))) [inst: DecidableRel G.Adj]:
+--   SimpleGraph_to_simple_graph (remove_last G) = remove_last_from_simple_graph (SimpleGraph_to_simple_graph G) := by
+--   induction n with
+--   | zero => simp at *
+--             unfold SimpleGraph_to_simple_graph
+--             unfold SimpleGraph_to_pre_simple_graph
+--             simp
+--             unfold remove_last_from_simple_graph
+--             simp
+--             congr
+--   | succ m iH => simp at *
+--                  unfold SimpleGraph_to_simple_graph
+--                  unfold SimpleGraph_to_pre_simple_graph
+--                  simp
+--                  unfold remove_last_from_simple_graph
+--                  simp
+--                  congr
+
+-- instance inst: ∀ {n} (G: SimpleGraph (Fin n)) (S: Set (Fin n)) [i0: DecidableRel G.Adj] [i1: ∀ x, Decidable (S x)],
+--   DecidableRel (add_one_more G S).Adj := by
+--   intros n G S i0 i1
+--   unfold add_one_more DecidableRel
+--   simp
+--   intros a b
+--   infer_instance
+
+instance inst2: ∀ {n} (g: simple_graph n), DecidableRel (simple_graph_to_SimpleGraph g).Adj := by
+  unfold simple_graph_to_SimpleGraph
+  simp
+  intros n g
+  unfold DecidableRel
+  intros x y
+  unfold adjacent neighbors neighbors_aux
+  simp
+  cases g; rename_i g Hg
+  cases n <;> simp at *
+  . cases x
+    omega
+  . cases g; simp at *
     split_ifs
-    . apply H
-    . have Hy: y = fin_max n := by
-        ext
-        cases y
-        unfold fin_max
-        simp at *
-        omega
-      rw [<- Hy]
-      apply G.symm
-      apply H
-    . have Hx: x = fin_max n := by
-        ext
-        cases x
-        unfold fin_max
-        simp at *
-        omega
-      rw [<- Hx]
-      apply H
-    . have Hx: x = fin_max n := by
-        ext
-        cases x
-        unfold fin_max
-        simp at *
-        omega
-      have Hy: y = fin_max n := by
-        ext
-        cases y
-        unfold fin_max
-        simp at *
-        omega
-      rw [Hx, Hy] at H
-      apply (G.loopless _ H)
-  . unfold add_one_more remove_last at H
-    simp at H
-    split_ifs at H
-    . apply H
-    . have Hy: y = fin_max n := by
-        ext
-        cases y
-        unfold fin_max
-        simp at *
-        omega
-      rw [Hy]
-      apply G.symm
-      apply H
-    . have Hx: x = fin_max n := by
-        ext
-        cases x
-        unfold fin_max
-        simp at *
-        omega
-      rw [Hx]
-      apply H
+    . infer_instance
+    . infer_instance
+    . infer_instance
+
+theorem first_direction {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj]:
+  simple_graph_to_SimpleGraph (SimpleGraph_to_simple_graph G) = G := by
+  sorry
+
+theorem second_direcction {n} (g: simple_graph n):
+  SimpleGraph_to_simple_graph (simple_graph_to_SimpleGraph g) = g := by
+  sorry
+
 
 -- by https://leanprover.zulipchat.com/#user/684366 (Edward van de Meent)
 theorem fin_list_has_all_fins: ∀ {N} (f: Fin N), f ∈ Fin.list N := by
@@ -301,13 +363,6 @@ theorem fin_list_has_all_fins: ∀ {N} (f: Fin N), f ∈ Fin.list N := by
     exact m.2
   refine ⟨⟨m.val,this⟩,?_⟩
   simp only [List.get_eq_getElem, Fin.getElem_list, Fin.cast_mk, Fin.eta]
-
-theorem aux01 {n} (G: SimpleGraph (Fin (n + 1))) [inst: DecidableRel G.Adj]:
-  G = simple_graph_to_SimpleGraph (SimpleGraph_to_simple_graph G) := by
-  induction n with
-  | zero => sorry
-  | succ m iH => sorry
-
 
 
 
