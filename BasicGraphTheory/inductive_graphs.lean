@@ -264,9 +264,4 @@ instance inst2: ∀ {n} (g: simple_graph n), DecidableRel (simple_graph_to_Simpl
 
 theorem adj_proof_2 {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj] (x y: Fin n):
   G.Adj x y ↔ adjacent (SimpleGraph_to_simple_graph G) ↑x ↑y := by
-  constructor <;> intros h
-  . induction n with
-    | zero => cases x; omega
-    | succ m iH =>
-                   sorry
-  . sorry
+  sorry
