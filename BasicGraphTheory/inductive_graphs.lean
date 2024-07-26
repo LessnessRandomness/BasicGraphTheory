@@ -157,7 +157,28 @@ def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
                  exact (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
 
 -- testing
+#reduce (SimpleGraph_to_pre_simple_graph (⊤: SimpleGraph (Fin 5)))
 
+def pathgraph: SimpleGraph (Fin 4) := by
+  refine (SimpleGraph.mk (λ (x y: Fin 4) => (y.1 < 3 ∧ x.1 = y.1 + 1) ∨ (x.1 < 3 ∧ y.1 = x.1 + 1)) ?_ ?_)
+  . intros x y
+    simp
+    cases x
+    cases y
+    intros H
+    simp at *
+    tauto
+  . intros x
+    simp
+
+instance pathgraph_adj_dec: DecidableRel pathgraph.Adj := by
+  unfold DecidableRel
+  intros x y
+  unfold pathgraph
+  simp
+  infer_instance
+
+#reduce (SimpleGraph_to_pre_simple_graph pathgraph)
 
 
 
@@ -243,25 +264,7 @@ instance inst2: ∀ {n} (g: simple_graph n), DecidableRel (simple_graph_to_Simpl
 
 theorem adj_proof_2 {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj] (x y: Fin n):
   G.Adj x y ↔ adjacent (SimpleGraph_to_simple_graph G) ↑x ↑y := by
-  constructor <;> intros H
-  . induction n with
-    | zero => cases x; omega
-    | succ m iH => cases x <;> rename_i x Hx
-                   cases y <;> rename_i y Hy
-                   have Hx0: x < m ∨ x = m := by omega
-                   have Hy0: y < m ∨ y = m := by omega
-                   obtain Hx0 | Hx0 := Hx0 <;> obtain Hy0 | Hy0 := Hy0
-                   . sorry
-                   .
-                     sorry
-                   . sorry
-                   . sorry
-  . unfold adjacent neighbors neighbors_aux at H
-    induction n with
-    | zero => split at H
-              . simp at *
-              . linarith
-    | succ m iH => sorry
+  sorry
 
 
 -- theorem aux00 {n} (G: SimpleGraph (Fin (n + 1))):
