@@ -149,20 +149,24 @@ instance remove_last_adj_dec: ∀ {n} (G: SimpleGraph (Fin (n + 1))) [inst: Deci
   infer_instance
 
 -- Second direction
-def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n)) (inst: DecidableRel G.Adj):
-  pre_simple_graph n :=
-  match n with
-  | 0 => .Empty
-  | m + 1 => .Cons m
-             (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
-             (SimpleGraph_to_pre_simple_graph (remove_last G) (remove_last_adj_dec _))
+def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
+  [inst: DecidableRel G.Adj]: pre_simple_graph n := by
+  induction n with
+  | zero => exact .Empty
+  | succ m iH => refine (.Cons m ?_ (iH (remove_last G)))
+                 exact (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
+
+-- testing
+
+
+
 
 theorem fin_list_nodup n: (Fin.list n).Nodup := by
   sorry
 
 def SimpleGraph_to_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
   [inst: DecidableRel G.Adj]: simple_graph n := by
-  exists (SimpleGraph_to_pre_simple_graph G inst)
+  exists (SimpleGraph_to_pre_simple_graph G)
   induction n with
   | zero => cases G; rename_i Adj symm irrefl
             unfold correct_simple_graph
