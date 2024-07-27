@@ -14,17 +14,17 @@ inductive pre_simple_graph: Nat → Type :=
 def correct_simple_graph {n} (g: pre_simple_graph n): Prop :=
   match g with
   | .Empty => True
-  | .Cons _ h t => h.Nodup ∧ (∀ x, x ∈ h → x < n) ∧ correct_simple_graph t
+  | .Cons m h t => h.Nodup ∧ (∀ x, x ∈ h → x < m) ∧ correct_simple_graph t
 
 def simple_graph n := { g: pre_simple_graph n // correct_simple_graph g}
 
 def neighbors_aux {n} (g: pre_simple_graph n) (x: Nat): List Nat :=
   match g with
   | .Empty => []
-  | .Cons m L g' => if n = x
+  | .Cons m L g' => if m = x
                     then L ++ neighbors_aux g' x
                     else if x ∈ L
-                         then n :: neighbors_aux g' x
+                         then m :: neighbors_aux g' x
                          else neighbors_aux g' x
 
 def neighbors {n} (g: simple_graph n) (x: Nat): List Nat := neighbors_aux g.1 x
@@ -90,22 +90,25 @@ theorem adjacent_irrefl {n} (g: simple_graph n) (x: Nat): adjacent g x x → Fal
              simp at *
   | Cons m L g' iH => simp at *
                       unfold correct_simple_graph at Hg
+                      obtain ⟨H0, H1, H2⟩ := Hg
                       unfold neighbors_aux at H
-                      split at H <;> rename_i H0
-                      . obtain ⟨_, H1, H2⟩ := Hg
-                        simp at H
+                      split_ifs at H with H3 H4
+                      . simp at H
                         obtain H | H := H
-                        . have H2 := H1 _ H
-                          omega
-                        . exact (iH H2 H)
-                      . split at H; rename_i H1
-                        . simp at *
-                          obtain H | H := H
-                          . omega
-                          . obtain ⟨_, _, H2⟩ := Hg
-                            exact (iH H2 H)
-                        . obtain ⟨_, _, H2⟩ := Hg
-                          exact (iH H2 H)
+                        . have H4 := iH H2
+                          apply H4; clear H4
+                          unfold neighbors_aux
+                          split
+                          . simp at *
+                            exact (H1 x H)
+                          . have H4 := H1 _ H
+                            omega
+                        . tauto
+                      . simp at H
+                        obtain H | H := H
+                        . omega
+                        . tauto
+                      . tauto
 
 -- One direction
 def simple_graph_to_SimpleGraph {n} (g: simple_graph n): SimpleGraph (Fin n) := by
@@ -149,15 +152,32 @@ instance remove_last_adj_dec: ∀ {n} (G: SimpleGraph (Fin (n + 1))) [inst: Deci
   infer_instance
 
 -- Second direction
-def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
-  [inst: DecidableRel G.Adj]: pre_simple_graph n := by
-  induction n with
-  | zero => exact .Empty
-  | succ m iH => refine (.Cons m ?_ (iH (remove_last G)))
-                 exact (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
+
+def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n)) (inst: DecidableRel G.Adj):
+  pre_simple_graph n :=
+  match n with
+  | 0 => .Empty
+  | m + 1 => .Cons m
+              (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
+              (SimpleGraph_to_pre_simple_graph (remove_last G) (remove_last_adj_dec G))
+
+-- def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
+--   [inst: DecidableRel G.Adj]: pre_simple_graph n := by
+--   induction n with
+--   | zero => exact .Empty
+--   | succ m iH => refine (.Cons m ?_ (iH (remove_last G)))
+--                  exact (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
 
 -- testing
-#reduce (SimpleGraph_to_pre_simple_graph (⊤: SimpleGraph (Fin 5)))
+
+instance topgraph_adj_dec: DecidableRel (⊤: SimpleGraph (Fin 5)).Adj := by
+  intros x y
+  infer_instance
+
+#reduce (SimpleGraph_to_pre_simple_graph (⊤: SimpleGraph (Fin 5)) topgraph_adj_dec)
+#reduce (neighbors_aux (SimpleGraph_to_pre_simple_graph (⊤: SimpleGraph (Fin 5)) topgraph_adj_dec) 0)
+#reduce (neighbors_aux (SimpleGraph_to_pre_simple_graph (⊤: SimpleGraph (Fin 5)) topgraph_adj_dec) 1)
+
 
 def pathgraph: SimpleGraph (Fin 4) := by
   refine (SimpleGraph.mk (λ (x y: Fin 4) => (y.1 < 3 ∧ x.1 = y.1 + 1) ∨ (x.1 < 3 ∧ y.1 = x.1 + 1)) ?_ ?_)
@@ -178,7 +198,9 @@ instance pathgraph_adj_dec: DecidableRel pathgraph.Adj := by
   simp
   infer_instance
 
-#reduce (SimpleGraph_to_pre_simple_graph pathgraph)
+#reduce (SimpleGraph_to_pre_simple_graph pathgraph pathgraph_adj_dec)
+#reduce (neighbors_aux (SimpleGraph_to_pre_simple_graph pathgraph pathgraph_adj_dec) 2)
+#reduce (neighbors_aux (SimpleGraph_to_pre_simple_graph pathgraph pathgraph_adj_dec) 3)
 
 
 
@@ -187,7 +209,7 @@ theorem fin_list_nodup n: (Fin.list n).Nodup := by
 
 def SimpleGraph_to_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
   [inst: DecidableRel G.Adj]: simple_graph n := by
-  exists (SimpleGraph_to_pre_simple_graph G)
+  exists (SimpleGraph_to_pre_simple_graph G inst)
   induction n with
   | zero => cases G; rename_i Adj symm irrefl
             unfold correct_simple_graph
