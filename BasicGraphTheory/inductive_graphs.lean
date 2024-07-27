@@ -511,5 +511,36 @@ theorem adj_proof_2 {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj] (x y
                          exact H1
                      . clear H3
                        exact H1
-                   . un
-                     sorry
+                   . unfold SimpleGraph_to_simple_graph at *
+                     unfold SimpleGraph_to_pre_simple_graph at H0
+                     simp at *
+                     unfold adjacent at *
+                     unfold neighbors at *
+                     unfold neighbors_aux at H0
+                     simp at *
+                     split_ifs at H0 with H1 H2
+                     . simp at *
+                       obtain H0 | H0 := H0
+                       . omega
+                       . rw [<- H] at H0
+                         unfold remove_last at H0
+                         simp at H0
+                         unfold increase_fin_limit at H0
+                         simp at H0
+                         assumption
+                     . clear H2
+                       simp at H0
+                       obtain H0 | H0 := H0
+                       . omega
+                       . rewrite [<- H] at H0
+                         unfold remove_last at H0
+                         simp at *
+                         unfold increase_fin_limit at H0
+                         simp at H0
+                         assumption
+                     . rewrite [<- H] at H0
+                       unfold remove_last at H0
+                       simp at H0
+                       unfold increase_fin_limit at H0
+                       simp at H0
+                       assumption
