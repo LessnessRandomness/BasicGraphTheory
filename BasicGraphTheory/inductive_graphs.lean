@@ -158,54 +158,9 @@ def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n)) (inst: Dec
   match n with
   | 0 => .Empty
   | m + 1 => .Cons m
-              (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
+              (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (List.finRange m))
               (SimpleGraph_to_pre_simple_graph (remove_last G) (remove_last_adj_dec G))
 
--- def SimpleGraph_to_pre_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
---   [inst: DecidableRel G.Adj]: pre_simple_graph n := by
---   induction n with
---   | zero => exact .Empty
---   | succ m iH => refine (.Cons m ?_ (iH (remove_last G)))
---                  exact (List.filter (λ x => if G.Adj (fin_max m) x then true else false) (Fin.list m))
-
--- testing
-
-instance topgraph_adj_dec: DecidableRel (⊤: SimpleGraph (Fin 5)).Adj := by
-  intros x y
-  infer_instance
-
-#reduce (SimpleGraph_to_pre_simple_graph (⊤: SimpleGraph (Fin 5)) topgraph_adj_dec)
-#reduce (neighbors_aux (SimpleGraph_to_pre_simple_graph (⊤: SimpleGraph (Fin 5)) topgraph_adj_dec) 0)
-#reduce (neighbors_aux (SimpleGraph_to_pre_simple_graph (⊤: SimpleGraph (Fin 5)) topgraph_adj_dec) 1)
-
-
-def pathgraph: SimpleGraph (Fin 4) := by
-  refine (SimpleGraph.mk (λ (x y: Fin 4) => (y.1 < 3 ∧ x.1 = y.1 + 1) ∨ (x.1 < 3 ∧ y.1 = x.1 + 1)) ?_ ?_)
-  . intros x y
-    simp
-    cases x
-    cases y
-    intros H
-    simp at *
-    tauto
-  . intros x
-    simp
-
-instance pathgraph_adj_dec: DecidableRel pathgraph.Adj := by
-  unfold DecidableRel
-  intros x y
-  unfold pathgraph
-  simp
-  infer_instance
-
-#reduce (SimpleGraph_to_pre_simple_graph pathgraph pathgraph_adj_dec)
-#reduce (neighbors_aux (SimpleGraph_to_pre_simple_graph pathgraph pathgraph_adj_dec) 2)
-#reduce (neighbors_aux (SimpleGraph_to_pre_simple_graph pathgraph pathgraph_adj_dec) 3)
-
-
-
-theorem fin_list_nodup n: (Fin.list n).Nodup := by
-  sorry
 
 def SimpleGraph_to_pre_simple_graph_correct {n: Nat} (G: SimpleGraph (Fin n))
   [inst: DecidableRel G.Adj]: correct_simple_graph (SimpleGraph_to_pre_simple_graph G inst) := by
@@ -224,9 +179,9 @@ def SimpleGraph_to_pre_simple_graph_correct {n: Nat} (G: SimpleGraph (Fin n))
                    refine ⟨?_, ?_⟩
                    . simp
                    . simp
-                     have H := fin_list_nodup m
-                     generalize (Fin.list m) = W at *
+                     have H := List.nodup_finRange m
                      clear Adj symm irrefl inst iH
+                     generalize (List.finRange m) = W at *
                      induction W with
                      | nil => simp
                      | cons x t iH => simp at *
@@ -242,10 +197,10 @@ def SimpleGraph_to_pre_simple_graph_correct {n: Nat} (G: SimpleGraph (Fin n))
                    simp at Hx
                    obtain ⟨H, H0⟩ := Hx
                    cases H; rename_i w Hw
-                   cases Hw; rename_i H1 H2
+                   cases Hw
                    cases w
                    simp at *
-                   omega
+                   assumption
                  . apply iH
 
 def SimpleGraph_to_simple_graph {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj]: simple_graph n :=
@@ -286,14 +241,15 @@ instance inst2: ∀ {n} (g: simple_graph n), DecidableRel (simple_graph_to_Simpl
     . infer_instance
     . infer_instance
 
-theorem fin_aux00: ∀ {n} (f: Fin n), f ∈ Fin.list n := by
+theorem fin_aux00: ∀ {n} (f: Fin n), f ∈ List.finRange n := by
   intro n m
   refine List.mem_iff_get.mpr ?_
-  have : m.val < (Fin.list n).length := by
-    rw [Fin.length_list]
+  have : m.val < (List.finRange n).length := by
+    rw [List.length_finRange]
     exact m.2
   refine ⟨⟨m.val,this⟩,?_⟩
-  simp only [List.get_eq_getElem, Fin.getElem_list, Fin.cast_mk, Fin.eta]
+  simp only [List.get_eq_getElem, List.getElem_finRange, Fin.cast_mk, Fin.eta]
+
 
 theorem aux00 {n} (x y: Nat) (t: simple_graph n) (H: y ∈ neighbors_aux t.1 x): x ≤ n ∧ y ≤ n := by
   cases t; rename_i t Ht
@@ -358,7 +314,7 @@ theorem adj_proof_2 {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj] (x y
                        rw [List.mem_filter]
                        simp
                        constructor
-                       . exists ⟨↑y, Hy⟩, (fin_aux00 _)
+                       . exists ⟨↑y, Hy⟩
                        . rw [Hx] at H
                          assumption
                      . unfold fin_max at Hx
@@ -423,7 +379,7 @@ theorem adj_proof_2 {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj] (x y
                        rw [List.mem_filter]
                        simp
                        constructor
-                       . exists ⟨↑x, Hx⟩, (fin_aux00 _)
+                       . exists ⟨↑x, Hx⟩
                        . rw [Hy] at H
                          assumption
                      . unfold fin_max at Hy
