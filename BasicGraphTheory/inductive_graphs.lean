@@ -207,9 +207,8 @@ instance pathgraph_adj_dec: DecidableRel pathgraph.Adj := by
 theorem fin_list_nodup n: (Fin.list n).Nodup := by
   sorry
 
-def SimpleGraph_to_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
-  [inst: DecidableRel G.Adj]: simple_graph n := by
-  exists (SimpleGraph_to_pre_simple_graph G inst)
+def SimpleGraph_to_pre_simple_graph_correct {n: Nat} (G: SimpleGraph (Fin n))
+  [inst: DecidableRel G.Adj]: correct_simple_graph (SimpleGraph_to_pre_simple_graph G inst) := by
   induction n with
   | zero => cases G; rename_i Adj symm irrefl
             unfold correct_simple_graph
@@ -249,6 +248,9 @@ def SimpleGraph_to_simple_graph {n: Nat} (G: SimpleGraph (Fin n))
                    omega
                  . apply iH
 
+def SimpleGraph_to_simple_graph {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj]: simple_graph n :=
+  ⟨SimpleGraph_to_pre_simple_graph G inst, SimpleGraph_to_pre_simple_graph_correct G⟩
+
 -- Proofs of adjacency relation preservation
 
 theorem adj_proof_1 {n} (g: simple_graph n) (x y: Fin n): adjacent g ↑x ↑y ↔ (simple_graph_to_SimpleGraph g).Adj x y := by
@@ -284,6 +286,230 @@ instance inst2: ∀ {n} (g: simple_graph n), DecidableRel (simple_graph_to_Simpl
     . infer_instance
     . infer_instance
 
+theorem fin_aux00: ∀ {n} (f: Fin n), f ∈ Fin.list n := by
+  intro n m
+  refine List.mem_iff_get.mpr ?_
+  have : m.val < (Fin.list n).length := by
+    rw [Fin.length_list]
+    exact m.2
+  refine ⟨⟨m.val,this⟩,?_⟩
+  simp only [List.get_eq_getElem, Fin.getElem_list, Fin.cast_mk, Fin.eta]
+
+theorem aux00 {n} (x y: Nat) (t: simple_graph n) (H: y ∈ neighbors_aux t.1 x): x ≤ n ∧ y ≤ n := by
+  cases t; rename_i t Ht
+  induction n with
+  | zero => cases t
+            unfold neighbors_aux at H
+            simp at *
+  | succ m iH => cases t; rename_i h t
+                 unfold neighbors_aux at H
+                 split_ifs at H with H0 H1
+                 . simp at H
+                   obtain H | H := H
+                   . unfold correct_simple_graph at Ht
+                     obtain ⟨Ht1, Ht2, Ht3⟩ := Ht
+                     apply Ht2 at H
+                     omega
+                   . unfold correct_simple_graph at Ht
+                     obtain ⟨Ht1, Ht2, Ht3⟩ := Ht
+                     apply (iH _ Ht3) at H
+                     omega
+                 . unfold correct_simple_graph at Ht
+                   simp at *
+                   obtain H | H := H
+                   . obtain ⟨Ht1, Ht2, Ht3⟩ := Ht
+                     apply Ht2 at H1
+                     omega
+                   . obtain ⟨Ht1, Ht2, Ht3⟩ := Ht
+                     apply (iH _ Ht3) at H
+                     omega
+                 . unfold correct_simple_graph at Ht
+                   obtain ⟨Ht1, Ht2, Ht3⟩ := Ht
+                   apply (iH _ Ht3) at H
+                   omega
+
+
 theorem adj_proof_2 {n} (G: SimpleGraph (Fin n)) [inst: DecidableRel G.Adj] (x y: Fin n):
   G.Adj x y ↔ adjacent (SimpleGraph_to_simple_graph G) ↑x ↑y := by
-  sorry
+  induction n with
+  | zero => cases x; omega
+  | succ m iH => have Hx: x = fin_max m ∨ x.1 < m := by
+                   cases x
+                   unfold fin_max
+                   simp
+                   omega
+                 have Hy: y = fin_max m ∨ y.1 < m := by
+                   cases y
+                   unfold fin_max
+                   simp
+                   omega
+                 obtain Hx | Hx := Hx <;> obtain Hy | Hy := Hy
+                 . rw [Hx, Hy]
+                   simp
+                   apply adjacent_irrefl
+                 . constructor <;> intro H
+                   . clear iH
+                     unfold SimpleGraph_to_simple_graph SimpleGraph_to_pre_simple_graph
+                     unfold adjacent neighbors neighbors_aux
+                     simp
+                     split_ifs with H0 H1
+                     . simp
+                       left
+                       rw [List.mem_filter]
+                       simp
+                       constructor
+                       . exists ⟨↑y, Hy⟩, (fin_aux00 _)
+                       . rw [Hx] at H
+                         assumption
+                     . unfold fin_max at Hx
+                       cases x
+                       simp at H0 Hx
+                       omega
+                     . unfold fin_max at Hx
+                       cases x
+                       simp at H0 Hx
+                       omega
+                   . clear iH
+                     unfold SimpleGraph_to_simple_graph SimpleGraph_to_pre_simple_graph at H
+                     unfold adjacent neighbors neighbors_aux at H
+                     simp at H
+                     split_ifs at H with H0 H1
+                     . simp at H
+                       obtain H | H := H
+                       . rw [List.mem_filter] at H
+                         simp at H
+                         obtain ⟨H, H1⟩ := H
+                         rw [Hx]
+                         assumption
+                       . unfold neighbors_aux at H
+                         split at H
+                         . simp at *
+                         . rename_i heq
+                           split_ifs at H with H1 H2
+                           . linarith
+                           . simp at *
+                             exfalso
+                             have H3 := SimpleGraph_to_pre_simple_graph_correct (remove_last G)
+                             rewrite [heq] at H3
+                             unfold correct_simple_graph at H3
+                             obtain ⟨H4, H5, H6⟩ := H3
+                             apply H5 at H2
+                             linarith
+                           . exfalso
+                             have H3 := SimpleGraph_to_pre_simple_graph_correct (remove_last G)
+                             rewrite [heq] at H3
+                             unfold correct_simple_graph at H3
+                             obtain ⟨H4, H5, H6⟩ := H3
+                             have H7 := aux00 _ _ ⟨_, H6⟩ H
+                             linarith
+                     . cases x
+                       unfold fin_max at *
+                       simp at *
+                       omega
+                     . cases x
+                       unfold fin_max at *
+                       simp at *
+                       omega
+                 . constructor <;> intro H
+                   . clear iH
+                     apply G.symm at H
+                     apply adjacent_symm
+                     unfold SimpleGraph_to_simple_graph SimpleGraph_to_pre_simple_graph
+                     unfold adjacent neighbors neighbors_aux
+                     simp
+                     split_ifs with H0 H1
+                     . simp
+                       left
+                       rw [List.mem_filter]
+                       simp
+                       constructor
+                       . exists ⟨↑x, Hx⟩, (fin_aux00 _)
+                       . rw [Hy] at H
+                         assumption
+                     . unfold fin_max at Hy
+                       cases y
+                       simp at H0 Hy
+                       omega
+                     . unfold fin_max at Hy
+                       cases y
+                       simp at H0 Hy
+                       omega
+                   . clear iH
+                     apply G.symm
+                     apply adjacent_symm at H
+                     unfold SimpleGraph_to_simple_graph SimpleGraph_to_pre_simple_graph at H
+                     unfold adjacent neighbors neighbors_aux at H
+                     simp at H
+                     split_ifs at H with H0 H1
+                     . simp at H
+                       obtain H | H := H
+                       . rw [List.mem_filter] at H
+                         simp at H
+                         obtain ⟨H, H1⟩ := H
+                         rw [Hy]
+                         assumption
+                       . unfold neighbors_aux at H
+                         split at H
+                         . simp at *
+                         . rename_i heq
+                           split_ifs at H with H1 H2
+                           . linarith
+                           . simp at *
+                             exfalso
+                             have H3 := SimpleGraph_to_pre_simple_graph_correct (remove_last G)
+                             rewrite [heq] at H3
+                             unfold correct_simple_graph at H3
+                             obtain ⟨H4, H5, H6⟩ := H3
+                             apply H5 at H2
+                             linarith
+                           . exfalso
+                             have H3 := SimpleGraph_to_pre_simple_graph_correct (remove_last G)
+                             rewrite [heq] at H3
+                             unfold correct_simple_graph at H3
+                             obtain ⟨H4, H5, H6⟩ := H3
+                             have H7 := aux00 _ _ ⟨_, H6⟩ H
+                             linarith
+                     . cases y
+                       unfold fin_max at *
+                       simp at *
+                       omega
+                     . cases y
+                       unfold fin_max at *
+                       simp at *
+                       omega
+                 . have H := iH (remove_last G) ⟨_, Hx⟩ ⟨_, Hy⟩
+                   clear iH
+                   constructor <;> intro H0
+                   . unfold SimpleGraph_to_simple_graph at *
+                     unfold SimpleGraph_to_pre_simple_graph
+                     simp
+                     unfold adjacent at *
+                     unfold neighbors at *
+                     unfold neighbors_aux
+                     have H1: (remove_last G).Adj ⟨_, Hx⟩ ⟨_, Hy⟩ := by
+                       unfold remove_last
+                       simp
+                       cases x
+                       cases y
+                       unfold increase_fin_limit
+                       simp at *
+                       apply H0
+                     rw [H] at H1
+                     clear H
+                     simp at *
+                     split_ifs with H2 H3
+                     . omega
+                     . rw [List.mem_filter] at H3
+                       simp at *
+                       have H4: ↑y = m ∨ ↑y < m := by
+                         cases y
+                         simp at *
+                         omega
+                       obtain H4 | H4 := H4
+                       . tauto
+                       . right
+                         exact H1
+                     . clear H3
+                       exact H1
+                   . un
+                     sorry
