@@ -21,3 +21,42 @@ theorem H (m: Nat) (h: List Nat) (H: ∀ x ∈ h, x < m) (H0: h.Nodup) (f: Nat �
                      . simp
                        tauto
                    . omega
+
+theorem aux00 (n w: Nat) (H: w < n):
+  (Finset.filter (fun (x: Fin n) ↦ ↑x = w) Finset.univ).card = 1 := by
+  rw [<- Finset.univ_map_subtype]
+  simp
+  have H0: ∃! (x: Fin n), ↑x = w := by
+    exists ⟨w, H⟩
+    simp
+    intros y H0
+    cases y
+    simp at *
+    assumption
+  rw [<- unique_subtype_iff_exists_unique] at H0
+  cases H0; rename_i H10
+  apply Fintype.card_unique at H10
+  apply H10
+
+theorem aux01 (n: Nat) (L: List Nat) (H: ∀ x ∈ L, x < n) (H0: L.Nodup):
+  (Finset.filter (fun (x: Fin n) ↦ ↑x ∈ L) Finset.univ).card = L.length := by
+  rw [← Fintype.card_subtype]
+  induction L with
+  | nil => simp
+  | cons head tail iH => simp at *
+                         rw [Fintype.card_subtype_or_disjoint]
+                         . rw [Fintype.card_subtype]
+                           rw [aux00]
+                           . rw [iH H.2 H0.2]
+                             linarith
+                           . tauto
+                         . unfold Disjoint
+                           intros f1 H1 H2
+                           reduce at H1
+                           reduce at H2
+                           reduce
+                           intros w Hw
+                           have H3 := H1 _ Hw
+                           have H4 := H2 _ Hw
+                           rw [H3] at H4
+                           tauto

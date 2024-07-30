@@ -249,7 +249,7 @@ theorem fin_aux00: ∀ {n} (f: Fin n), f ∈ List.finRange n := by
   simp only [List.get_eq_getElem, List.getElem_finRange, Fin.cast_mk, Fin.eta]
 
 
-theorem aux00 {n} (x y: Nat) (t: simple_graph n) (H: y ∈ neighbors_aux t.1 x): x ≤ n ∧ y ≤ n := by
+theorem aux00 {n} (x y: Nat) (t: simple_graph n) (H: y ∈ neighbors_aux t.1 x): x < n ∧ y < n := by
   cases t; rename_i t Ht
   induction n with
   | zero => cases t
