@@ -177,42 +177,17 @@ theorem list_bind_list_map: ∀ (A B: Type) (f: A → B) (L: List A), L.bind (fu
 
 theorem aux03 (n w: Nat) (H: w < n):
   (Finset.filter (fun (x: Fin n) ↦ ↑x = w) Finset.univ).card = 1 := by
-  rw [<- Finset.univ_map_subtype]
-  simp
-  have H0: ∃! (x: Fin n), ↑x = w := by
-    exists ⟨w, H⟩
-    simp
-    intros y H0
-    cases y
-    simp at *
-    assumption
-  rw [<- unique_subtype_iff_exists_unique] at H0
-  cases H0; rename_i H10
-  apply Fintype.card_unique at H10
-  apply H10
+  rw [← Finset.card_singleton (⟨w, H⟩ : Fin n)]
+  congr
+  ext -- also solved from here on down by `aesop`
+  simp [Fin.ext_iff]
 
 theorem aux04 (n: Nat) (L: List Nat) (H: ∀ x ∈ L, x < n) (H0: L.Nodup):
   (Finset.filter (fun (x: Fin n) ↦ ↑x ∈ L) Finset.univ).card = L.length := by
-  rw [← Fintype.card_subtype]
-  induction L with
-  | nil => simp
-  | cons head tail iH => simp at *
-                         rw [Fintype.card_subtype_or_disjoint]
-                         . rw [Fintype.card_subtype]
-                           rw [aux03]
-                           . rw [iH H.2 H0.2]
-                             linarith
-                           . tauto
-                         . unfold Disjoint
-                           intros f1 H1 H2
-                           reduce at H1
-                           reduce at H2
-                           reduce
-                           intros w Hw
-                           have H3 := H1 _ Hw
-                           have H4 := H2 _ Hw
-                           rw [H3] at H4
-                           tauto
+    rw [← List.toFinset_card_of_nodup H0, ← Finset.card_map ⟨_, Fin.val_injective⟩]
+    congr
+    ext i
+    simpa [Fin.exists_iff] using H i
 
 theorem neighbors_lemma00 {n} g:
   ∀ h (H0: correct_simple_graph (.Cons n h g)) m (Hm: n ≤ m), neighbors_aux g m = [] := by
@@ -291,12 +266,31 @@ theorem finset_product_aux00 {n} (p q: Fin n → Prop)
   exact Finset.card_product (Finset.filter p Finset.univ) (Finset.filter q Finset.univ)
 
 theorem finset_aux01 {n} (p q: Fin n × Fin n → Prop) [DecidablePred p] [DecidablePred q]:
-  (Finset.filter (fun x => q x ∧ p x) Finset.univ).card +
-  (Finset.filter (fun x => q x ∧ ¬ p x) Finset.univ).card =
+  (Finset.filter (fun x => p x ∧ q x) Finset.univ).card +
+  (Finset.filter (fun x => ¬ p x ∧ q x) Finset.univ).card =
   (Finset.filter (fun x => q x) Finset.univ).card := by
+  have H: (fun x => p x ∧ q x) = (fun x => q x ∧ p x) := by
+    ext; intros; tauto
+  have H0: (fun x => ¬ p x ∧ q x) = (fun x => q x ∧ ¬ p x) := by
+    ext; intros; tauto
+  simp_rw [H, H0]
   rw [<- Finset.filter_filter]
   rw [<- Finset.filter_filter]
   rw [Finset.filter_card_add_filter_neg_card_eq_card]
+
+theorem finset_aux02 {n} (P: Nat → Nat → Prop) (H: ∀ x y, P x y → x < n ∧ y < n) [DecidableRel P]:
+  (Finset.filter (fun (x: Fin n × Fin n) => P ↑x.1 ↑x.2) Finset.univ).card =
+  (Finset.filter (fun (x: Fin (n + 1) × Fin (n + 1)) => P ↑x.1 ↑x.2) Finset.univ).card := by
+  apply Finset.card_bij (fun x _ => (Fin.castSucc x.1, Fin.castSucc x.2))
+  · simp
+  · simp
+    intro ⟨a, ha⟩ ⟨b, hb⟩ h ⟨a', ha'⟩ ⟨hb, hb'⟩ h'
+    simp (config := {contextual := true}) [H _ _ h, H _ _ h']
+  · simp
+    intro ⟨a, ha⟩ ⟨b, hb⟩ h
+    specialize H _ _ h
+    use ⟨a, H.1⟩, ⟨b, H.2⟩
+    simpa using h
 
 theorem sum_degrees_eq_twice_card_edges_Fin_variant {n} (G: SimpleGraph (Fin n)) [DecidableRel G.Adj]:
   ∑ v, G.degree v = 2 * G.edgeFinset.card := by
@@ -409,7 +403,39 @@ theorem sum_degrees_eq_twice_card_edges_Fin_variant {n} (G: SimpleGraph (Fin n))
                              constructor
                              . tauto
                              . omega
-                         sorry
+                         simp_rw [H]
+                         rw [aux04]
+                         . clear H
+                           have H := finset_aux01 (fun (x: Fin (m + 1) × Fin (m + 1)) => ↑x.1 ∈ h) (fun x => ¬↑x.1 = m ∧ ↑x.2 ∈ neighbors_aux g ↑x.1)
+                           rw [Nat.add_assoc]
+                           rw [H]
+                           clear H
+                           have H: (fun (x: Fin (m + 1) × Fin (m + 1)) => ¬↑x.1 = m ∧ ↑x.2 ∈ neighbors_aux g ↑x.1) =
+                                   (fun (x: Fin (m + 1) × Fin (m + 1)) => ↑x.2 ∈ neighbors_aux g ↑x.1) := by
+                             ext; rename_i x
+                             constructor <;> intros H10
+                             . tauto
+                             . constructor
+                               . have aux := aux00 ↑x.1 ↑x.2 ⟨g, Hg3⟩
+                                 simp at aux
+                                 apply aux at H10
+                                 omega
+                               . assumption
+                           simp_rw [H]
+                           clear H
+                           have H: (Finset.filter (fun (x: Fin m × Fin m) ↦ ↑x.2 ∈ neighbors_aux g ↑x.1) Finset.univ).card =
+                                   (Finset.filter (fun (x: Fin (m + 1) × Fin (m + 1)) ↦ ↑x.2 ∈ neighbors_aux g ↑x.1) Finset.univ).card := by
+                             apply (finset_aux02 (fun x y => y ∈ neighbors_aux g x))
+                             intros x y H
+                             apply (aux00 x y ⟨g, Hg3⟩)
+                             simp
+                             assumption
+                           rw [H]
+                           omega
+                         . intros x Hx
+                           apply Hg2 at Hx
+                           omega
+                         . assumption
                        . omega
                      . intros x Hx
                        apply Hg2 at Hx

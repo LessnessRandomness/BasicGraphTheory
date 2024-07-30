@@ -60,3 +60,8 @@ theorem aux01 (n: Nat) (L: List Nat) (H: ∀ x ∈ L, x < n) (H0: L.Nodup):
                            have H4 := H2 _ Hw
                            rw [H3] at H4
                            tauto
+
+theorem aux02 {n} (P: Nat → Nat → Prop) (H: ∀ x y, P x y → x < n ∧ y < n) [DecidableRel P]:
+  (Finset.filter (fun (x: Fin n × Fin n) => P x.1 x.2) Finset.univ).card =
+  (Finset.filter (fun (x: Fin (n + 1) × Fin (n + 1)) => P x.1 x.2) Finset.univ).card := by
+  sorry
