@@ -271,13 +271,164 @@ theorem degree_conserved {n} (G: SimpleGraph (Fin n)) v [inst: DecidableRel G.Ad
   . assumption
   . assumption
 
+theorem finset_filter_ite {n} (p P1 P2: Fin n × Fin n → Prop)
+  [DecidablePred p] [DecidablePred P1] [DecidablePred P2]:
+  Finset.filter (fun x => if p x then P1 x else P2 x) Finset.univ =
+  Finset.filter (fun x => p x ∧ P1 x) Finset.univ ∪
+  Finset.filter (fun x => ¬ p x ∧ P2 x) Finset.univ := by
+  unfold Finset.filter
+  ext
+  simp
+  split_ifs <;> tauto
+
+theorem finset_product_aux00 {n} (p q: Fin n → Prop)
+  [DecidablePred p] [DecidablePred q]:
+  (Finset.filter (fun (x: Fin n × Fin n) => p x.1 ∧ q x.2) Finset.univ).card =
+  (Finset.filter (fun (x: Fin n) => p x) Finset.univ).card *
+  (Finset.filter (fun (x: Fin n) => q x) Finset.univ).card := by
+  rw [<- Finset.univ_product_univ]
+  rw [Finset.filter_product]
+  exact Finset.card_product (Finset.filter p Finset.univ) (Finset.filter q Finset.univ)
+
+theorem finset_aux01 {n} (p q: Fin n × Fin n → Prop) [DecidablePred p] [DecidablePred q]:
+  (Finset.filter (fun x => q x ∧ p x) Finset.univ).card +
+  (Finset.filter (fun x => q x ∧ ¬ p x) Finset.univ).card =
+  (Finset.filter (fun x => q x) Finset.univ).card := by
+  rw [<- Finset.filter_filter]
+  rw [<- Finset.filter_filter]
+  rw [Finset.filter_card_add_filter_neg_card_eq_card]
+
 theorem sum_degrees_eq_twice_card_edges_Fin_variant {n} (G: SimpleGraph (Fin n)) [DecidableRel G.Adj]:
   ∑ v, G.degree v = 2 * G.edgeFinset.card := by
   simp_rw [degree_conserved]
   have H := sum_of_degrees_twice_of_edges (SimpleGraph_to_simple_graph G)
   rw [@Finset.sum_range] at H
   rw [H]
-  congr 1
   clear H
-
-  sorry
+  rw [SimpleGraph.two_mul_card_edgeFinset]
+  simp_rw [adj_proof_2]
+  --
+  generalize (SimpleGraph_to_simple_graph G) = W
+  rename_i inst; clear inst G
+  cases W; rename_i g Hg
+  induction n with
+  | zero => cases g
+            simp at *
+            unfold edges edges_aux
+            simp
+  | succ m iH => cases g
+                 rename_i h g
+                 unfold edges edges_aux
+                 simp
+                 obtain ⟨Hg1, Hg2, Hg3⟩ := Hg
+                 have H := iH g Hg3
+                 unfold edges at H
+                 simp at H
+                 have H0: 2 * ((edges_aux g).length + h.length) = 2 * (edges_aux g).length + 2 * h.length := by
+                   omega
+                 rw [H0]
+                 rw [H]
+                 unfold adjacent neighbors
+                 simp_rw [neighbors_aux]
+                 have H1: ∀ x: Fin (m + 1) × Fin (m + 1), (↑x.2 ∈
+                          if m = ↑x.1 then h ++ neighbors_aux g ↑x.1
+                          else if ↑x.1 ∈ h then m :: neighbors_aux g ↑x.1 else neighbors_aux g ↑x.1) ↔
+                          (if m = ↑x.1 then ↑x.2 ∈ h ++ neighbors_aux g ↑x.1 else
+                           if ↑x.1 ∈ h then ↑x.2 ∈ m :: neighbors_aux g ↑x.1 else
+                           ↑x.2 ∈ neighbors_aux g ↑x.1) := by
+                   intros p
+                   split_ifs <;> tauto
+                 simp_rw [H1]
+                 clear iH H1 H H0
+                 simp
+                 repeat rw [finset_filter_ite]
+                 rw [Finset.card_union_of_disjoint]
+                 . have H: ∀ (x: Fin (m + 1) × Fin (m + 1)),
+                           (¬m = ↑x.1 ∧ if ↑x.1 ∈ h then ↑x.2 = m ∨ ↑x.2 ∈ neighbors_aux g ↑x.1 else ↑x.2 ∈ neighbors_aux g ↑x.1) ↔
+                           (if ↑x.1 ∈ h then ¬ m = ↑x.1 ∧ (↑x.2 = m ∨ ↑x.2 ∈ neighbors_aux g ↑x.1) else ¬ m = ↑x.1 ∧ ↑x.2 ∈ neighbors_aux g ↑x.1) := by
+                     intros x
+                     split_ifs <;> tauto
+                   simp_rw [H]
+                   clear H
+                   rw [finset_filter_ite]
+                   rw [Finset.card_union_of_disjoint]
+                   . have H: (fun (x: Fin (m + 1) × Fin (m + 1)) => m = ↑x.1 ∧ (↑x.2 ∈ h ∨ ↑x.2 ∈ neighbors_aux g ↑x.1)) =
+                             (fun (x: Fin (m + 1) × Fin (m + 1)) => m = ↑x.1 ∧ ↑x.2 ∈ h) := by
+                       ext; rename_i x
+                       constructor <;> intros H
+                       . obtain ⟨H1, H2⟩ := H
+                         rw [<- H1] at H2
+                         have H3 := aux02 m ⟨g, Hg3⟩ m (by omega)
+                         unfold neighbors at H3
+                         simp at H3
+                         rw [H3] at H2
+                         simp at H2
+                         tauto
+                       . tauto
+                     simp_rw [H]
+                     clear H
+                     have H: (fun (x: Fin (m + 1) × Fin (m + 1)) => ↑x.1 ∈ h ∧ ¬m = ↑x.1 ∧ (↑x.2 = m ∨ ↑x.2 ∈ neighbors_aux g ↑x.1)) =
+                             (fun (x: Fin (m + 1) × Fin (m + 1)) => ↑x.1 ∈ h ∧ ¬m = ↑x.1 ∧ (↑x.2 = m) ∨ ↑x.1 ∈ h ∧ ¬m = ↑x.1 ∧ ↑x.2 ∈ neighbors_aux g ↑x.1) := by
+                       ext; rename_i x
+                       tauto
+                     simp_rw [H]; clear H
+                     rw [Finset.filter_or]
+                     repeat rw [Finset.card_union]
+                     rw [<- Finset.filter_and]
+                     have H: (fun (a: Fin (m + 1) × Fin (m + 1)) => (↑a.1 ∈ h ∧ ¬m = ↑a.1 ∧ ↑a.2 = m) ∧ ↑a.1 ∈ h ∧ ¬m = ↑a.1 ∧ ↑a.2 ∈ neighbors_aux g ↑a.1) =
+                             (fun (a: Fin (m + 1) × Fin (m + 1)) => False) := by
+                       ext; rename_i x
+                       simp
+                       intros H1 H2 H3 H4 H5 H6
+                       have H7 := aux00 ↑x.1 ↑x.2 ⟨g, Hg3⟩
+                       simp at H7
+                       apply H7 at H6
+                       omega
+                     simp_rw [H, Finset.filter_False, Finset.card_empty]
+                     clear H
+                     simp
+                     simp_rw [finset_product_aux00 (fun x => m = ↑x) (fun x => ↑x ∈ h)]
+                     simp_rw [@Eq.comm _ m]
+                     rw [aux03]
+                     simp
+                     rw [aux04]
+                     . have H: ∀ (x y: Fin (m + 1)), ↑x ∈ h ∧ ¬ ↑x = m ∧ ↑y = m ↔
+                               ((fun x => ↑x ∈ h ∧ ¬ ↑x = m) x ∧ (fun y => ↑y = m) y) := by
+                         intros x y
+                         tauto
+                       simp_rw [H]
+                       simp_rw [finset_product_aux00 (fun x => ↑x ∈ h ∧ ¬ ↑x = m) (fun x => ↑x = m)]
+                       rw [aux03]
+                       . simp
+                         clear H
+                         have H: ∀ (x: Fin (m + 1)), ↑x ∈ h ∧ ¬ ↑x = m ↔ ↑x ∈ h := by
+                           intros x
+                           constructor <;> intro H0
+                           . tauto
+                           . have H1 := Hg2 _ H0
+                             constructor
+                             . tauto
+                             . omega
+                         sorry
+                       . omega
+                     . intros x Hx
+                       apply Hg2 at Hx
+                       omega
+                     . assumption
+                     . omega
+                   . unfold Disjoint
+                     intros p H1 H2 H3 H4
+                     simp at *
+                     have H5 := H4
+                     apply H1 at H4
+                     apply H2 at H5
+                     simp at *
+                     tauto
+                 . unfold Disjoint
+                   intros p H1 H2 H3 H4
+                   simp at *
+                   have H5 := H4
+                   apply H1 at H4
+                   apply H2 at H5
+                   simp at *
+                   tauto
