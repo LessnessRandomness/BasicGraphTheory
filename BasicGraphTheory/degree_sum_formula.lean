@@ -274,5 +274,10 @@ theorem degree_conserved {n} (G: SimpleGraph (Fin n)) v [inst: DecidableRel G.Ad
 theorem sum_degrees_eq_twice_card_edges_Fin_variant {n} (G: SimpleGraph (Fin n)) [DecidableRel G.Adj]:
   ∑ v, G.degree v = 2 * G.edgeFinset.card := by
   simp_rw [degree_conserved]
+  have H := sum_of_degrees_twice_of_edges (SimpleGraph_to_simple_graph G)
+  rw [@Finset.sum_range] at H
+  rw [H]
+  congr 1
+  clear H
 
   sorry
