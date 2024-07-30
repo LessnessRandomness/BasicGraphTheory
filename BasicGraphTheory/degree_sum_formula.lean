@@ -167,144 +167,12 @@ instance adjacent_decidable: ∀ {n} (g: simple_graph n), DecidableRel (adjacent
   unfold adjacent
   infer_instance
 
--- theorem list_filter_or {A} (L: List A) (f g: A → Bool) x:
---   x ∈ List.filter (λ x => f x || g x) L ↔ (x ∈ List.filter f L ∨ x ∈ List.filter g L) := by
---   induction L with
---   | nil => simp
---   | cons head tail iH => repeat rw [List.filter_cons]
---                          simp
---                          split_ifs with H1 H2 H3 H4
---                          . simp
---                            rw [iH]
---                            tauto
---                          . simp
---                            rw [iH]
---                            tauto
---                          . simp
---                            rw [iH]
---                            tauto
---                          . tauto
---                          . tauto
---                          . tauto
---                          . tauto
---                          . tauto
-
--- theorem neighbors_set_of_all_adjacent {n} (g: simple_graph n) (x v: Nat):
---   v ∈ neighbors g x ↔ v ∈ List.filter (fun y => Decidable.decide (adjacent g x y)) (List.finRange n) := by
---   cases g; rename_i g H
---   induction n with
---   | zero => simp at *
---             unfold neighbors neighbors_aux
---             split
---             . simp
---             . linarith
---   | succ m iH => have H4: ∀ (A B: Type) (f: A → B) (L: List A), L.bind (fun a => [f a]) = List.map f L := by
---                      intros A B f L
---                      induction L with
---                      | nil => simp
---                      | cons head tail iH => simp
---                                             assumption
---                  simp at *
---                  rw [H4] at *
---                  cases g; rename_i h t
---                  unfold neighbors at *
---                  simp at *
---                  rw [neighbors_aux]
---                  obtain ⟨H1, H2, H3⟩ := H
---                  split_ifs with H4 H5
---                  . cases H4
---                    simp
---                    rw [iH _ H3]
---                    rw [List.range_succ]
---                    simp
---                    rw [List.filter_singleton]
---                    rw [Bool.cond_decide]
---                    have H5 := adjacent_irrefl ⟨pre_simple_graph.Cons x h t, ⟨H1, H2, H3⟩⟩ x
---                    split_ifs <;> try tauto
---                    simp
---                    unfold adjacent neighbors
---                    simp
---                    have H6: ∀ y, y ∈ neighbors_aux (.Cons x h t) x ↔
---                                  y ∈ h ∨ y ∈ neighbors_aux t x := by
---                      intros
---                      rw [neighbors_aux]
---                      simp
---                    simp_rw [H6]
---                    simp
---                    rw [list_filter_or]
---                    have H7: ∀ v, v ∈ List.filter (λ y => y ∈ h) (List.range x) ↔ v ∈ h := by
---                      rename_i H'
---                      clear H' H5 H3 iH H6 t H4 v
---                      induction h with
---                      | nil => simp
---                      | cons head tail iH => simp at *
---                                             intros v
---                                             rw [list_filter_or]
---                                             rw [iH H1.2 H2.2]
---                                             rw [List.filter_eq]
---                                             simp
---                                             have H3: List.count head (List.range x) = 1 := by
---                                               clear iH
---                                               apply List.count_eq_one_of_mem
---                                               . apply List.nodup_range
---                                               . rw [List.mem_range]
---                                                 tauto
---                                             have H4: ¬ List.count head (List.range x) = 0 := by omega
---                                             tauto
---                    rw [H7]
---                  . simp
---                    rw [iH _ H3]
---                    rw [List.range_succ]
---                    simp
---                    rw [List.filter_singleton]
---                    rw [Bool.cond_decide]
---                    split_ifs with H6
---                    . simp
---                      have H7: ∀ y, adjacent ⟨pre_simple_graph.Cons m h t, ⟨H1, H2, H3⟩⟩ x y ↔
---                                    y ∈ if m = x then h ++ neighbors_aux t x else if x ∈ h then m :: neighbors_aux t x else neighbors_aux t x := by
---                        intros y
---                        unfold adjacent neighbors at *
---                        simp
---                        rw [neighbors_aux]
---                      simp_rw [H7]
---                      have H8: ∀ y, (y ∈ if m = x then h ++ neighbors_aux t x else if x ∈ h then m :: neighbors_aux t x else neighbors_aux t x) ↔
---                               (if m = x then y ∈ h ++ neighbors_aux t x else if x ∈ h then y ∈ m :: neighbors_aux t x else y ∈ neighbors_aux t x) := by
---                        intros y
---                        split_ifs; tauto
---                      simp_rw [H8]
---                      simp_rw [decide_ite]
---                      have H9: ∀ y, (if m = x then decide (y ∈ h ++ neighbors_aux t x)
---                               else if x ∈ h then decide (y ∈ m :: neighbors_aux t x) else decide (y ∈ neighbors_aux t x)) =
---                               (decide (y ∈ m :: neighbors_aux t x)) := by
---                        split_ifs
---                        simp
---                      simp_rw [H9]
---                      unfold adjacent neighbors
---                      simp
---                      simp_rw [list_filter_or]
---                      have H10: List.filter (fun x => decide (x = m)) (List.range m) = [] := by
---                        sorry
---                      rw [H10]
---                      simp
---                      tauto
---                    . simp
---                      sorry
---                  . sorry
-
 theorem list_bind_list_map: ∀ (A B: Type) (f: A → B) (L: List A), L.bind (fun a => [f a]) = List.map f L := by
   intros A B f L
   induction L with
   | nil => simp
   | cons head tail iH => simp
                          assumption
-
--- theorem degree_aux00 {n} (G: SimpleGraph (Fin n)) v [DecidableRel G.Adj]:
---   (G.neighborFinset v) = (λ (w: Fin n) => ↑w ∈ neighbors (SimpleGraph_to_simple_graph G) ↑v).toFinset := by
---   ext
---   simp
---   rw [adj_proof_2]
---   unfold adjacent
---   tauto
 
 
 theorem aux03 (n w: Nat) (H: w < n):
@@ -403,9 +271,8 @@ theorem degree_conserved {n} (G: SimpleGraph (Fin n)) v [inst: DecidableRel G.Ad
   . assumption
   . assumption
 
-
-
 theorem sum_degrees_eq_twice_card_edges_Fin_variant {n} (G: SimpleGraph (Fin n)) [DecidableRel G.Adj]:
   ∑ v, G.degree v = 2 * G.edgeFinset.card := by
+  simp_rw [degree_conserved]
 
   sorry
