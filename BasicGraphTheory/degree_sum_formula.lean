@@ -209,7 +209,46 @@ theorem neighbors_lemma00 {n} g:
 
 
 theorem neighbors_Nodup {n} (g: simple_graph n) x: (neighbors g x).Nodup := by
-  sorry
+  induction n with
+  | zero => cases g; rename_i g Hg
+            unfold neighbors neighbors_aux
+            split
+            . simp
+            . linarith
+  | succ m iH => cases g; rename_i g Hg
+                 cases g; rename_i h g
+                 unfold neighbors neighbors_aux
+                 split_ifs with H1 H2
+                 . have H2: ∀ y, y ∈ neighbors_aux g x → False := by
+                     intros y Hy
+                     apply aux00 _ _ ⟨g, Hg.2.2⟩ at Hy
+                     omega
+                   have H3: neighbors_aux g x = [] := by
+                     generalize (neighbors_aux g x) = W at *
+                     cases W
+                     . simp
+                     . simp at H2
+                       exfalso
+                       rename_i head tail
+                       have H3 := (H2 head).1
+                       tauto
+                   rw [H3]
+                   simp
+                   exact Hg.1
+                 . simp
+                   constructor
+                   . intros H3
+                     obtain ⟨Hg1, Hg2, Hg3⟩ := Hg
+                     apply aux00 _ _ ⟨g, Hg3⟩ at H3
+                     omega
+                   . have H3 := iH ⟨g, Hg.2.2⟩
+                     unfold neighbors at H3
+                     simp at H3
+                     assumption
+                 . have H3 := iH ⟨g, Hg.2.2⟩
+                   unfold neighbors at H3
+                   simp at H3
+                   exact H3
 
 def remove_last_from_pre_simple_graph {n} (g: pre_simple_graph (n + 1)): pre_simple_graph n :=
   match g with | .Cons _ h g' => g'
