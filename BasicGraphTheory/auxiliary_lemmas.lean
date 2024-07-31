@@ -66,3 +66,49 @@ theorem list_bind_list_map: ∀ (A B: Type) (f: A → B) (L: List A), L.bind (fu
   | nil => simp
   | cons head tail iH => simp
                          assumption
+
+theorem finset_filter_ite {n} (p P1 P2: Fin n × Fin n → Prop)
+  [DecidablePred p] [DecidablePred P1] [DecidablePred P2]:
+  Finset.filter (fun x => if p x then P1 x else P2 x) Finset.univ =
+  Finset.filter (fun x => p x ∧ P1 x) Finset.univ ∪
+  Finset.filter (fun x => ¬ p x ∧ P2 x) Finset.univ := by
+  unfold Finset.filter
+  ext
+  simp
+  split_ifs <;> tauto
+
+theorem aux06 {n} (p q: Fin n → Prop)
+  [DecidablePred p] [DecidablePred q]:
+  (Finset.filter (fun (x: Fin n × Fin n) => p x.1 ∧ q x.2) Finset.univ).card =
+  (Finset.filter (fun (x: Fin n) => p x) Finset.univ).card *
+  (Finset.filter (fun (x: Fin n) => q x) Finset.univ).card := by
+  rw [<- Finset.univ_product_univ]
+  rw [Finset.filter_product]
+  exact Finset.card_product (Finset.filter p Finset.univ) (Finset.filter q Finset.univ)
+
+theorem aux07 {n} (p q: Fin n × Fin n → Prop) [DecidablePred p] [DecidablePred q]:
+  (Finset.filter (fun x => p x ∧ q x) Finset.univ).card +
+  (Finset.filter (fun x => ¬ p x ∧ q x) Finset.univ).card =
+  (Finset.filter (fun x => q x) Finset.univ).card := by
+  have H: (fun x => p x ∧ q x) = (fun x => q x ∧ p x) := by
+    ext; tauto
+  have H0: (fun x => ¬ p x ∧ q x) = (fun x => q x ∧ ¬ p x) := by
+    ext; tauto
+  simp_rw [H, H0]
+  rw [<- Finset.filter_filter]
+  rw [<- Finset.filter_filter]
+  rw [Finset.filter_card_add_filter_neg_card_eq_card]
+
+theorem aux08 {n} (P: Nat → Nat → Prop) (H: ∀ x y, P x y → x < n ∧ y < n) [DecidableRel P]:
+  (Finset.filter (fun (x: Fin n × Fin n) => P ↑x.1 ↑x.2) Finset.univ).card =
+  (Finset.filter (fun (x: Fin (n + 1) × Fin (n + 1)) => P ↑x.1 ↑x.2) Finset.univ).card := by
+  apply Finset.card_bij (fun x _ => (Fin.castSucc x.1, Fin.castSucc x.2))
+  · simp
+  · simp
+    intro ⟨a, ha⟩ ⟨b, hb⟩ h ⟨a', ha'⟩ ⟨hb, hb'⟩ h'
+    simp (config := {contextual := true}) [H _ _ h, H _ _ h']
+  · simp
+    intro ⟨a, ha⟩ ⟨b, hb⟩ h
+    specialize H _ _ h
+    use ⟨a, H.1⟩, ⟨b, H.2⟩
+    simpa using h

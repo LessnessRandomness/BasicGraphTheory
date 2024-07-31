@@ -1,4 +1,5 @@
 import Mathlib.Combinatorics.SimpleGraph.Basic
+import Mathlib.Combinatorics.SimpleGraph.Finite
 import BasicGraphTheory.auxiliary_lemmas
 import BasicGraphTheory.inductive_graphs
 
@@ -302,3 +303,40 @@ theorem adj_preserved_SG_to_sg {n} (G: SimpleGraph (Fin n)) [DecidableRel G.Adj]
                        unfold fin_limit_succ at H0
                        simp at H0
                        assumption
+
+
+-- Some theorems about conversion about degree conservation
+
+def remove_last_from_pre_simple_graph {n} (g: pre_simple_graph (n + 1)): pre_simple_graph n :=
+  match g with | .Cons _ _ g' => g'
+
+theorem SG_to_sg_of_remove_last {n} (G: SimpleGraph (Fin (n + 1))) [inst: DecidableRel G.Adj]:
+  (SimpleGraph_to_simple_graph (remove_last G)).1 = remove_last_from_pre_simple_graph (SimpleGraph_to_simple_graph G).1 := by
+  unfold remove_last remove_last_from_pre_simple_graph
+  unfold SimpleGraph_to_simple_graph SimpleGraph_to_pre_simple_graph
+  simp at *
+  induction n with
+  | zero => congr
+  | succ m _ => congr
+
+theorem degree_conserved {n} (G: SimpleGraph (Fin n)) v [inst: DecidableRel G.Adj]:
+  G.degree v = degree (SimpleGraph_to_simple_graph G) v := by
+  unfold SimpleGraph.degree
+  unfold SimpleGraph.neighborFinset SimpleGraph.neighborSet
+  simp_rw [adj_preserved_SG_to_sg]
+  unfold adjacent degree neighbors
+  simp
+  have H: (SimpleGraph_to_simple_graph G).1 = SimpleGraph_to_pre_simple_graph G inst := by
+    unfold SimpleGraph_to_simple_graph
+    simp
+  have aux: (neighbors_aux (SimpleGraph_to_simple_graph G).1 ↑v).Nodup := by
+    have H0 := neighbors_Nodup (SimpleGraph_to_simple_graph G) ↑v
+    unfold neighbors at H0
+    exact H0
+  have aux0: ∀ y ∈ neighbors_aux (SimpleGraph_to_simple_graph G).1 ↑v, y < n := by
+    intros y Hy
+    have H0 := @size_limit_on_adjacent_nodes n ↑v y (SimpleGraph_to_simple_graph G)
+    unfold adjacent neighbors at H0; simp at H0
+    tauto
+  generalize (neighbors_aux (SimpleGraph_to_simple_graph G).1 ↑v) = W at *
+  convert (aux02 n W aux0 aux)
