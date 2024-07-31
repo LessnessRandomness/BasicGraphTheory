@@ -540,6 +540,38 @@ theorem sum_degrees_eq_twice_card_edges_Mathlib_version {V} (G: SimpleGraph V) [
       simp
       assumption
   have H3: ∑ v, G.degree v = ∑ v, G'.degree v := by
-    apply (Fintype.sum_equiv equiv (fun x => G.degree x) (fun x => G'.degree x) H2)
-    sorry
-  sorry
+    apply (Fintype.sum_equiv equiv (fun x => G.degree x) (fun x => G'.degree x))
+    convert H2
+  rw [H3]
+  have H4: G.edgeFinset.card = G'.edgeFinset.card := by
+    unfold_let G'
+    unfold SimpleGraph.edgeFinset
+    unfold SimpleGraph.edgeSet
+    simp
+    apply Finset.card_bij (fun x _ => Sym2.map equiv x)
+    . intros a ha
+      simp at *
+      unfold SimpleGraph.edgeSet at *
+      unfold SimpleGraph.edgeSetEmbedding at *
+      simp at *
+      cases a
+      simp at *
+      exact ha
+    . intros a1 Ha1 a2 Ha2 H
+      cases a1
+      cases a2
+      simp at *
+      congr
+    . intros a Ha
+      cases a
+      rename_i x y
+      simp at *
+      exists s(equiv.symm x, equiv.symm y)
+      constructor
+      . unfold SimpleGraph.edgeSet
+        unfold SimpleGraph.edgeSetEmbedding
+        simp
+        exact Ha
+      . simp
+  rw [H4]
+  exact sum_degrees_eq_twice_card_edges_Fin_variant G'
