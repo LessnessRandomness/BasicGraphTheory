@@ -4,6 +4,9 @@ import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Algebra.BigOperators.Group.Finset
 
+
+-- Most of these by the help of leanprover.zulipchat.com members
+
 theorem aux00 {n} (f: Fin n): f ∈ List.finRange n := by
   refine List.mem_iff_get.mpr ?_
   have H: f.val < (List.finRange n).length := by
