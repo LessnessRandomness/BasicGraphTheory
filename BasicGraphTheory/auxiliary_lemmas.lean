@@ -3,7 +3,7 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Algebra.BigOperators.Group.Finset
-
+import Mathlib.Data.List.Nodup
 
 -- Most of these by the help of leanprover.zulipchat.com members
 
@@ -115,3 +115,47 @@ theorem aux08 {n} (P: Nat → Nat → Prop) (H: ∀ x y, P x y → x < n ∧ y <
     specialize H _ _ h
     use ⟨a, H.1⟩, ⟨b, H.2⟩
     simpa using h
+
+-- to simplify both following, maybe?
+
+-- theorem forall_erase {A} [DecidableEq A] (P: A → Prop) (L: List A):
+--   (∀ x ∈ L, P x) → ∀ h, ∀ x ∈ L.erase h, P x := by
+--   induction L with
+--   | nil => simp
+--   | cons h t iH => simp
+--                    intros H H0 h1 x Hx
+--                    unfold List.erase at Hx
+--                    split at Hx; rename_i b heq
+--                    . tauto
+--                    . simp at *
+--                      obtain Hx | Hx := Hx
+--                      . subst Hx
+--                        exact H
+--                      . apply iH at Hx <;> assumption
+
+-- theorem forall_diff_1 {A} [DecidableEq A] (P: A → Prop) (L1 L2: List A):
+--   (∀ x ∈ L1, P x) → (∀ x ∈ L2, P x) → ∀ x ∈ L1.diff L2, P x := by
+--   intros H1 H2 x Hx
+--   revert x L1 H1
+--   induction L2 with
+--   | nil => simp_rw [List.diff_nil]
+--            simp
+--   | cons h t iH => simp at *
+--                    intros L1 H1 x Hx
+--                    have T := iH H2.2 (L1.erase h)
+--                    have T0: ∀ x ∈ L1.erase h, P x := by
+--                      unfold List.erase
+--                      split <;> simp at *
+--                      split <;> try tauto
+--                      simp
+--                      constructor
+--                      . exact H1.1
+--                      . apply forall_erase
+--                        exact H1.2
+--                    tauto
+
+-- theorem forall_diff {A} [DecidableEq A] (L1 L2: List A) x: x ∈ L1 ∧ x ∉ L2 ↔ x ∈ (L1.diff L2) := by
+--   constructor <;> intro H
+--   . exact (List.mem_diff_of_mem H.1 H.2)
+--   . apply (List.diff_subset L1 L2) at H
+--     sorry
