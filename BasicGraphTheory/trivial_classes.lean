@@ -1,5 +1,4 @@
 import BasicGraphTheory.inductive_graphs
-import BasicGraphTheory.auxiliary_lemmas
 
 
 def pre_null_graph n: pre_simple_graph n :=

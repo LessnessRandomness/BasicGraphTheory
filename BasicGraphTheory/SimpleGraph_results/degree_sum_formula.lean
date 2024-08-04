@@ -1,9 +1,11 @@
+import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import BasicGraphTheory.degree_sum_formula
 import BasicGraphTheory.relation_to_SimpleGraph
 
 -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/Combinatorics/SimpleGraph/DegreeSum.html#SimpleGraph.two_mul_card_edgeFinset
 theorem two_mul_card_edgeFinset {V} (G : SimpleGraph V) [Fintype V] [DecidableRel G.Adj] [Fintype (Sym2 V)]:
-  2 * G.edgeFinset.card = (Finset.filter (fun (x: V × V) => G.Adj x.1 x.2) Finset.univ).card := by sorry
+  2 * G.edgeFinset.card = (Finset.filter (fun (x: V × V) => G.Adj x.1 x.2) Finset.univ).card := by
+  apply SimpleGraph.two_mul_card_edgeFinset
 
 theorem sum_degrees_eq_twice_card_edges_Fin_variant {n} (G: SimpleGraph (Fin n)) [DecidableRel G.Adj]:
   ∑ v, G.degree v = 2 * G.edgeFinset.card := by
