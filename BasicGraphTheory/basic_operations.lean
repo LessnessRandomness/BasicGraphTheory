@@ -1,5 +1,8 @@
 import BasicGraphTheory.inductive_graphs
 
+
+-- difference
+
 def diff_aux {n} (g g': pre_simple_graph n): pre_simple_graph n :=
   match g, g' with
   | .Empty, .Empty => .Empty
@@ -162,3 +165,14 @@ def diff_thm {n} (g g': simple_graph n): ∀ {x y} (Hx: x < n) (Hy: y < n) (Hxy:
                        unfold adjacent neighbors diff at H6
                        simp at H6
                        tauto
+
+
+def intersection {n} (g1 g2: simple_graph n): simple_graph n := diff g1 (diff g1 g2)
+
+def intersection_thm {n} (g1 g2: simple_graph n): ∀ {x y} (Hx: x < n) (Hy: y < n) (Hxy: x ≠ y),
+  (adjacent (intersection g1 g2) x y ↔ (adjacent g1 x y ∧ adjacent g2 x y)) := by
+  intros x y Hx Hy Hxy
+  unfold intersection
+  rw [diff_thm g1 (diff g1 g2) Hx Hy Hxy]
+  rw [diff_thm g1 g2 Hx Hy Hxy]
+  tauto
