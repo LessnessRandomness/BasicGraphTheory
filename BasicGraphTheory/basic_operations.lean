@@ -167,12 +167,263 @@ def diff_thm {n} (g g': simple_graph n): ∀ {x y} (Hx: x < n) (Hy: y < n) (Hxy:
                        tauto
 
 
-def intersection {n} (g1 g2: simple_graph n): simple_graph n := diff g1 (diff g1 g2)
 
-def intersection_thm {n} (g1 g2: simple_graph n): ∀ {x y} (Hx: x < n) (Hy: y < n) (Hxy: x ≠ y),
-  (adjacent (intersection g1 g2) x y ↔ (adjacent g1 x y ∧ adjacent g2 x y)) := by
-  intros x y Hx Hy Hxy
-  unfold intersection
-  rw [diff_thm g1 (diff g1 g2) Hx Hy Hxy]
-  rw [diff_thm g1 g2 Hx Hy Hxy]
-  tauto
+--- intersection
+
+def inter_aux {n} (g g': pre_simple_graph n): pre_simple_graph n :=
+  match g, g' with
+  | .Empty, .Empty => .Empty
+  | .Cons m h g, .Cons _ h' g' => .Cons m (h ∩ h') (inter_aux g g')
+
+def inter_aux_correct_graph {n} (g g': simple_graph n): correct_simple_graph (inter_aux g.1 g'.1) := by
+  cases g; rename_i g Hg
+  cases g'; rename_i g' Hg'
+  simp
+  induction n with
+  | zero => cases g
+            cases g'
+            unfold correct_simple_graph inter_aux
+            split
+            . tauto
+            . linarith
+  | succ m iH => cases g; rename_i h g
+                 cases g'; rename_i h' g'
+                 obtain ⟨Hg1, Hg2, Hg3⟩ := Hg
+                 obtain ⟨Hg1', Hg2', Hg3'⟩ := Hg'
+                 unfold inter_aux correct_simple_graph
+                 simp
+                 refine ⟨?_, ?_, ?_⟩
+                 . exact (List.Nodup.inter h' Hg1)
+                 . intro x H1 H2
+                   tauto
+                 . apply (iH g Hg3 g' Hg3')
+
+def inter {n} (g g': simple_graph n): simple_graph n := ⟨inter_aux g.1 g'.1, inter_aux_correct_graph g g'⟩
+
+def inter_thm {n} (g g': simple_graph n): ∀ {x y} (Hx: x < n) (Hy: y < n) (Hxy: x ≠ y),
+  (adjacent (inter g g') x y ↔ (adjacent g x y ∧ adjacent g' x y)) := by
+  cases g; rename_i g Hg
+  cases g'; rename_i g' Hg'
+  . induction n with
+    | zero => intros x y Hx Hy Hxy
+              linarith
+    | succ m iH => intros x y Hx Hy Hxy
+                   cases g; rename_i h g
+                   cases g'; rename_i h' g'
+                   unfold inter adjacent neighbors
+                   simp
+                   rw [inter_aux]
+                   rw [neighbors_aux, neighbors_aux, neighbors_aux]
+                   obtain ⟨Hg1, Hg2, Hg3⟩ := Hg
+                   obtain ⟨Hg1', Hg2', Hg3'⟩ := Hg'
+                   split_ifs with H1 H2 H3 H4
+                   . simp
+                     constructor <;> intro H
+                     . obtain H | H := H
+                       . tauto
+                       . have H2 := size_limit_on_adjacent_nodes x y ⟨_, inter_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                         have H3 := iH g Hg3 g' Hg3' H2.1 H2.2 Hxy
+                         unfold adjacent neighbors inter at H3
+                         tauto
+                     . obtain ⟨H2 | H2, H3 | H3⟩ := H
+                       . tauto
+                       . have H4 := size_limit_on_adjacent_nodes x y ⟨g', Hg3'⟩ H3
+                         linarith
+                       . have H4 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H2
+                         linarith
+                       . have H4 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H2
+                         have H5 := iH g Hg3 g' Hg3' H4.1 H4.2 Hxy
+                         tauto
+                   . constructor <;> intro H
+                     . simp at *
+                       obtain H | H := H
+                       . tauto
+                       . have H5 := size_limit_on_adjacent_nodes x y ⟨_, inter_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                         have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                         tauto
+                     . simp at *
+                       obtain ⟨H5 | H5, H6 | H6⟩ := H
+                       . tauto
+                       . tauto
+                       . tauto
+                       . have H7 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H5
+                         have H8 := iH g Hg3 g' Hg3' H7.1 H7.2 Hxy
+                         tauto
+                   . simp at H2
+                     tauto
+                   . simp at H2
+                     tauto
+                   . simp at H2
+                     tauto
+                   . simp at H2
+                     tauto
+                   . constructor <;> intro H
+                     . simp
+                       have H3 := size_limit_on_adjacent_nodes x y ⟨_, inter_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                       have H4 := iH g Hg3 g' Hg3' H3.1 H3.2 Hxy
+                       tauto
+                     . obtain ⟨H3, H4⟩ := H
+                       obtain H5 := size_limit_on_adjacent_nodes x y ⟨g', Hg3'⟩ H4
+                       have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                       simp at H3
+                       obtain H3 | H3 := H3
+                       . linarith
+                       . tauto
+                   . constructor <;> intro H
+                     . simp
+                       have H3 := size_limit_on_adjacent_nodes x y ⟨_, inter_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                       have H4 := iH g Hg3 g' Hg3' H3.1 H3.2 Hxy
+                       tauto
+                     . obtain ⟨H3, H4⟩ := H
+                       have H5 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H3
+                       have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                       simp at H4
+                       obtain H4 | H4 := H4
+                       . linarith
+                       . tauto
+                   . constructor <;> intro H
+                     . have H3 := size_limit_on_adjacent_nodes x y ⟨_, inter_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                       have H4 := iH g Hg3 g' Hg3' H3.1 H3.2 Hxy
+                       tauto
+                     . obtain ⟨H3, H4⟩ := H
+                       have H5 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H3
+                       have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                       tauto
+
+
+-- union
+
+def union_aux {n} (g g': pre_simple_graph n): pre_simple_graph n :=
+  match g, g' with
+  | .Empty, .Empty => .Empty
+  | .Cons m h g, .Cons _ h' g' => .Cons m (h ∪ h') (union_aux g g')
+
+def union_aux_correct_graph {n} (g g': simple_graph n): correct_simple_graph (union_aux g.1 g'.1) := by
+  cases g; rename_i g Hg
+  cases g'; rename_i g' Hg'
+  simp
+  induction n with
+  | zero => cases g
+            cases g'
+            unfold correct_simple_graph union_aux
+            simp
+  | succ m iH => cases g; rename_i h g
+                 cases g'; rename_i h' g'
+                 obtain ⟨Hg1, Hg2, Hg3⟩ := Hg
+                 obtain ⟨Hg1', Hg2', Hg3'⟩ := Hg'
+                 unfold union_aux correct_simple_graph
+                 simp
+                 refine ⟨?_, ?_, ?_⟩
+                 . exact (List.Nodup.union h Hg1')
+                 . intros x Hx
+                   tauto
+                 . apply (iH g Hg3 g' Hg3')
+
+def union {n} (g g': simple_graph n): simple_graph n := ⟨union_aux g.1 g'.1, union_aux_correct_graph g g'⟩
+
+def union_thm {n} (g g': simple_graph n): ∀ {x y} (Hx: x < n) (Hy: y < n) (Hxy: x ≠ y),
+  (adjacent (union g g') x y ↔ (adjacent g x y ∨ adjacent g' x y)) := by
+  cases g; rename_i g Hg
+  cases g'; rename_i g' Hg'
+  . induction n with
+    | zero => intros x y Hx Hy Hxy
+              linarith
+    | succ m iH => intros x y Hx Hy Hxy
+                   cases g; rename_i h g
+                   cases g'; rename_i h' g'
+                   unfold union adjacent neighbors
+                   simp
+                   rw [union_aux]
+                   rw [neighbors_aux, neighbors_aux, neighbors_aux]
+                   obtain ⟨Hg1, Hg2, Hg3⟩ := Hg
+                   obtain ⟨Hg1', Hg2', Hg3'⟩ := Hg'
+                   split_ifs with H1 H2 H3 H4
+                   . constructor <;> intro H
+                     . simp at *
+                       obtain (H | H) | H := H
+                       . tauto
+                       . tauto
+                       . have H2 := size_limit_on_adjacent_nodes x y ⟨_, union_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                         linarith
+                     . simp at *
+                       obtain (H | H) | H | H := H
+                       . tauto
+                       . have H2 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H
+                         linarith
+                       . tauto
+                       . have H2 := size_limit_on_adjacent_nodes x y ⟨g', Hg3'⟩ H
+                         linarith
+                   . constructor <;> intro H
+                     . simp at *
+                       obtain H | H := H
+                       . tauto
+                       . have H3 := size_limit_on_adjacent_nodes x y ⟨_, union_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                         have H4 := iH g Hg3 g' Hg3' H3.1 H3.2 Hxy
+                         tauto
+                     . simp at *
+                       obtain (H | H) | H | H := H
+                       . tauto
+                       . have H5 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H
+                         have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                         tauto
+                       . tauto
+                       . have H5 := size_limit_on_adjacent_nodes x y ⟨g', Hg3'⟩ H
+                         have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                         tauto
+                   . constructor <;> intro H
+                     . simp at *
+                       obtain H | H := H
+                       . tauto
+                       . have H5 := size_limit_on_adjacent_nodes x y ⟨_, union_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                         have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                         tauto
+                     . simp at *
+                       obtain (H | H) | H := H
+                       . tauto
+                       . have H5 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H
+                         have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                         tauto
+                       . have H5 := size_limit_on_adjacent_nodes x y ⟨g', Hg3'⟩ H
+                         have H6 := iH g Hg3 g' Hg3' H5.1 H5.2 Hxy
+                         tauto
+                   . constructor <;> intro H
+                     . simp at *
+                       obtain H | H := H
+                       . tauto
+                       . have H4 := size_limit_on_adjacent_nodes x y ⟨_, union_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                         have H6 := iH g Hg3 g' Hg3' H4.1 H4.2 Hxy
+                         tauto
+                     . simp at *
+                       obtain H | H | H := H
+                       . have H4 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H
+                         have H5 := iH g Hg3 g' Hg3' H4.1 H4.2 Hxy
+                         tauto
+                       . tauto
+                       . have H4 := size_limit_on_adjacent_nodes x y ⟨g', Hg3'⟩ H
+                         have H5 := iH g Hg3 g' Hg3' H4.1 H4.2 Hxy
+                         tauto
+                   . simp at H2
+                     tauto
+                   . simp at H2
+                     tauto
+                   . simp at H2
+                     tauto
+                   . simp at H2
+                     tauto
+                   . constructor <;> intro H
+                     . have H4 := size_limit_on_adjacent_nodes x y ⟨_, union_aux_correct_graph ⟨g, Hg3⟩ ⟨g', Hg3'⟩⟩ H
+                       have H5 := iH g Hg3 g' Hg3' H4.1 H4.2 Hxy
+                       tauto
+                     . obtain H | H := H
+                       . have H4 := size_limit_on_adjacent_nodes x y ⟨g, Hg3⟩ H
+                         have H5 := iH g Hg3 g' Hg3' H4.1 H4.2 Hxy
+                         tauto
+                       . have H4 := size_limit_on_adjacent_nodes x y ⟨g', Hg3'⟩ H
+                         have H5 := iH g Hg3 g' Hg3' H4.1 H4.2 Hxy
+                         tauto
+
+
+-- symmetrical difference or XOR
+
+def symm_diff {n} (g g': simple_graph n): simple_graph n :=
+  union (diff g g') (diff g' g)
