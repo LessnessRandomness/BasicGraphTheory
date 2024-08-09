@@ -319,7 +319,7 @@ theorem SG_to_sg_of_remove_last {n} (G: SimpleGraph (Fin (n + 1))) [inst: Decida
   | zero => congr
   | succ m _ => congr
 
-theorem degree_conserved {n} (G: SimpleGraph (Fin n)) v [inst: DecidableRel G.Adj]:
+theorem degree_preserved {n} (G: SimpleGraph (Fin n)) v [inst: DecidableRel G.Adj]:
   G.degree v = degree (SimpleGraph_to_simple_graph G) v := by
   unfold SimpleGraph.degree
   unfold SimpleGraph.neighborFinset SimpleGraph.neighborSet

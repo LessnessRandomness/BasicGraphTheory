@@ -300,5 +300,5 @@ theorem aux3 {V} {G: SimpleGraph V} {M1 M2: G.Subgraph} (H1: M1.IsMatching) (H2:
 
 theorem Berge's_lemma {V} [F: Fintype V] [D: DecidableEq V]
   {G: SimpleGraph V} {M: SimpleGraph.Subgraph G} (H: M.IsMatching):
-  IsMaximum H ↔ (∀ (x y: V) (P: SimpleGraph.Path G x y) (b: Bool), ¬ AugmentingPath M P) := by
+  IsMaximum H ↔ (∀ (x y: V) (P: SimpleGraph.Path G x y), ¬ AugmentingPath M P) := by
   sorry

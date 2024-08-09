@@ -39,6 +39,7 @@ theorem complete_graph_correct n: correct_simple_graph (pre_complete_graph n) :=
 
 def complete_graph n: simple_graph n := ⟨pre_complete_graph n, complete_graph_correct n⟩
 
+
 theorem null_graph_no_adjacent {n} x y: adjacent (null_graph n) x y → False := by
   induction n with
   | zero => unfold null_graph pre_null_graph

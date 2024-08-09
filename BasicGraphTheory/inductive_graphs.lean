@@ -127,6 +127,20 @@ theorem size_limit_on_adjacent_nodes {n} (x y: Nat) (g: simple_graph n) (H: adja
                  . apply (iH _ Hg3) at H
                    omega
 
+theorem node_too_big_neighbors_nil {n} (x) (g: simple_graph n): n ≤ x → neighbors g x = [] := by
+  intro H
+  have H: ∀ i, i ∈ neighbors g x → False := by
+    intros i Hi
+    have H := size_limit_on_adjacent_nodes x i g Hi
+    linarith
+  generalize (neighbors g x) = W at *
+  cases W
+  . simp
+  . simp at *
+    rename_i head tail
+    have H0 := H head
+    tauto
+
 theorem neighbors_Nodup {n} (g: simple_graph n) x: (neighbors g x).Nodup := by
   induction n with
   | zero => cases g; rename_i g Hg

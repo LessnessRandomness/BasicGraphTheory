@@ -1,5 +1,4 @@
 import BasicGraphTheory.inductive_graphs
-import BasicGraphTheory.relation_to_SimpleGraph
 import BasicGraphTheory.auxiliary_lemmas
 
 
